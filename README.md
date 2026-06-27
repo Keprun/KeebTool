@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/banner.svg" alt="KeebTool — Keychron V1 Max battery monitor + VIA configurator" width="100%">
+  <img src="docs/banner.png" alt="KeebTool — Keychron V1 Max battery monitor + VIA configurator" width="100%">
 </p>
 
 <p align="center">
@@ -15,6 +15,10 @@ A native macOS menu-bar app for the **Keychron V1 Max**: see the battery level (
 firmware does not expose over USB), and configure the keyboard — remap keys, edit macros, and
 control RGB lighting — over the VIA raw-HID protocol. Ships with a small QMK firmware patch that
 adds a battery read-out command and an Fn+B on-board battery gauge.
+
+<p align="center">
+  <img src="docs/screenshot.png" alt="KeebTool configurator — keymap layers, visual V1 Max layout and keycode picker" width="100%">
+</p>
 
 ## Features
 

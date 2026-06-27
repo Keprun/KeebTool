@@ -1,0 +1,227 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 660" width="1120" height="660" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
+<defs>
+ <linearGradient id="cap" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2A2D38"/><stop offset="0.5" stop-color="#191B22"/><stop offset="1" stop-color="#101218"/></linearGradient>
+ <linearGradient id="capMod" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#23202B"/><stop offset="1" stop-color="#0F0E16"/></linearGradient>
+ <linearGradient id="capSel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1B3A44"/><stop offset="1" stop-color="#0E2630"/></linearGradient>
+ <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#21D4D9"/><stop offset="1" stop-color="#0E8F93"/></linearGradient>
+ <radialGradient id="vig" cx="50%" cy="0%" r="90%"><stop offset="0" stop-color="#14161D"/><stop offset="1" stop-color="#0A0B0F"/></radialGradient>
+ <filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+ <filter id="wsh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="10" stdDeviation="22" flood-color="#000" flood-opacity="0.55"/></filter>
+</defs>
+
+<rect width="1120" height="660" fill="#05060a"/>
+<g filter="url(#wsh)">
+ <rect x="8" y="8" width="1104" height="644" rx="14" fill="#0A0B0F" stroke="#23262F"/>
+ <!-- main pane vignette -->
+ <rect x="216" y="38" width="896" height="606" fill="url(#vig)"/>
+
+ <!-- title bar -->
+ <circle cx="32" cy="27.0" r="6" fill="#ff5f57"/><circle cx="52" cy="27.0" r="6" fill="#febc2e"/><circle cx="72" cy="27.0" r="6" fill="#28c840"/>
+ <text x="560.0" y="31.0" font-size="13" fill="#8A90A0" text-anchor="middle">Keychron V1 Max</text>
+
+ <!-- sidebar -->
+ <rect x="8" y="38" width="208" height="614" fill="#14161D"/>
+ <rect x="215.5" y="38" width="0.5" height="614" fill="#23262F"/>
+ <text x="30" y="72" font-size="11" fill="#E8EAF0" font-weight="700" letter-spacing="1.5">KEYCHRON</text>
+ <text x="30" y="88" font-size="11" fill="#8A90A0">V1 Max</text>
+
+ <!-- nav: keymap active -->
+ <rect x="16" y="112" width="192" height="34" rx="7" fill="url(#accent)"/>
+ <text x="42" y="134" font-size="13" fill="#0A0B0F" font-weight="600">Keymap</text>
+ <text x="42" y="172" font-size="13" fill="#8A90A0">Macros</text>
+ <text x="42" y="208" font-size="13" fill="#8A90A0">Lighting</text>
+
+ <!-- device card -->
+ <rect x="16" y="568" width="192" height="60" rx="8" fill="#1A1C24" stroke="#23262F"/>
+ <circle cx="34" cy="594" r="5" fill="#5CE0A0"/>
+ <text x="48" y="594" font-size="11" fill="#E8EAF0" font-weight="600">Connected</text>
+ <text x="48" y="610" font-size="10" fill="#8A90A0" font-family="ui-monospace,Menlo,monospace">95% · 4.06V · charging</text>
+
+ <!-- header -->
+ <rect x="234" y="60" width="3" height="18" rx="1.5" fill="#21D4D9"/>
+ <text x="246" y="75" font-size="16" fill="#E8EAF0" font-weight="600">Keymap</text>
+ <text x="1090" y="75" font-size="11" fill="#8A90A0" text-anchor="end" font-family="ui-monospace,Menlo,monospace">Cable — charging 95% · 4.06V</text>
+ <rect x="216" y="90" width="896" height="0.5" fill="#23262F"/>
+
+ <!-- layer tabs -->
+ <rect x="234" y="64" width="150" height="26" rx="6" fill="#1A1C24" stroke="#23262F"/>
+ <rect x="236" y="66" width="36" height="22" rx="5" fill="url(#accent)"/>
+ <text x="254" y="81" font-size="11" fill="#0A0B0F" text-anchor="middle" font-weight="600">L0</text>
+ <text x="291" y="81" font-size="11" fill="#8A90A0" text-anchor="middle">L1</text>
+ <text x="329" y="81" font-size="11" fill="#8A90A0" text-anchor="middle">L2</text>
+ <text x="365" y="81" font-size="11" fill="#8A90A0" text-anchor="middle">L3</text>
+
+ <!-- keyboard -->
+ <rect x="234.0" y="108.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="253.0" y="131.0" font-size="8.5" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">esc</text>
+<rect x="276.0" y="108.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="295.0" y="131.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">F1</text>
+<rect x="318.0" y="108.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="337.0" y="131.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">F2</text>
+<rect x="360.0" y="108.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="379.0" y="131.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">F3</text>
+<rect x="402.0" y="108.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="421.0" y="131.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">F4</text>
+<rect x="444.0" y="108.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="463.0" y="131.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">F5</text>
+<rect x="486.0" y="108.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="505.0" y="131.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">F6</text>
+<rect x="528.0" y="108.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="547.0" y="131.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">F7</text>
+<rect x="570.0" y="108.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="589.0" y="131.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">F8</text>
+<rect x="612.0" y="108.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="631.0" y="131.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">F9</text>
+<rect x="654.0" y="108.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="673.0" y="131.0" font-size="8.5" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">F10</text>
+<rect x="696.0" y="108.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="715.0" y="131.0" font-size="8.5" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">F11</text>
+<rect x="738.0" y="108.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="757.0" y="131.0" font-size="8.5" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">F12</text>
+<rect x="780.0" y="108.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="799.0" y="131.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">◉</text>
+<rect x="234.0" y="150.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="253.0" y="173.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">`</text>
+<rect x="276.0" y="150.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="295.0" y="173.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">1</text>
+<rect x="318.0" y="150.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="337.0" y="173.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">2</text>
+<rect x="360.0" y="150.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="379.0" y="173.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">3</text>
+<rect x="402.0" y="150.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="421.0" y="173.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">4</text>
+<rect x="444.0" y="150.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="463.0" y="173.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">5</text>
+<rect x="486.0" y="150.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="505.0" y="173.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">6</text>
+<rect x="528.0" y="150.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="547.0" y="173.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">7</text>
+<rect x="570.0" y="150.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="589.0" y="173.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">8</text>
+<rect x="612.0" y="150.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="631.0" y="173.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">9</text>
+<rect x="654.0" y="150.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="673.0" y="173.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">0</text>
+<rect x="696.0" y="150.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="715.0" y="173.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">-</text>
+<rect x="738.0" y="150.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="757.0" y="173.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">=</text>
+<rect x="780.0" y="150.0" width="80.0" height="38" rx="7" fill="url(#capMod)" stroke="#926DDE" stroke-opacity="0.45" stroke-width="0.7" />
+<text x="820.0" y="173.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">⌫</text>
+<rect x="864.0" y="150.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="883.0" y="173.0" font-size="8.5" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">PgUp</text>
+<rect x="234.0" y="192.0" width="59.0" height="38" rx="7" fill="url(#capMod)" stroke="#926DDE" stroke-opacity="0.45" stroke-width="0.7" />
+<text x="263.5" y="215.0" font-size="8.5" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">Tab</text>
+<rect x="297.0" y="192.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="316.0" y="215.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">Q</text>
+<rect x="339.0" y="192.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="358.0" y="215.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">W</text>
+<rect x="381.0" y="192.0" width="38.0" height="38" rx="7" fill="url(#capSel)" stroke="#21D4D9" stroke-opacity="1" stroke-width="1.4" filter="url(#glow)"/>
+<text x="400.0" y="215.0" font-size="12" fill="#A6F4F7" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="600">E</text>
+<rect x="423.0" y="192.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="442.0" y="215.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">R</text>
+<rect x="465.0" y="192.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="484.0" y="215.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">T</text>
+<rect x="507.0" y="192.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="526.0" y="215.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">Y</text>
+<rect x="549.0" y="192.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="568.0" y="215.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">U</text>
+<rect x="591.0" y="192.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="610.0" y="215.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">I</text>
+<rect x="633.0" y="192.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="652.0" y="215.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">O</text>
+<rect x="675.0" y="192.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="694.0" y="215.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">P</text>
+<rect x="717.0" y="192.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="736.0" y="215.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">[</text>
+<rect x="759.0" y="192.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="778.0" y="215.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">]</text>
+<rect x="801.0" y="192.0" width="59.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="830.5" y="215.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">\</text>
+<rect x="864.0" y="192.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="883.0" y="215.0" font-size="8.5" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">PgDn</text>
+<rect x="234.0" y="234.0" width="69.5" height="38" rx="7" fill="url(#capMod)" stroke="#926DDE" stroke-opacity="0.45" stroke-width="0.7" />
+<text x="268.8" y="257.0" font-size="8.5" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">Caps</text>
+<rect x="307.5" y="234.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="326.5" y="257.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">A</text>
+<rect x="349.5" y="234.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="368.5" y="257.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">S</text>
+<rect x="391.5" y="234.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="410.5" y="257.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">D</text>
+<rect x="433.5" y="234.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="452.5" y="257.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">F</text>
+<rect x="475.5" y="234.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="494.5" y="257.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">G</text>
+<rect x="517.5" y="234.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="536.5" y="257.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">H</text>
+<rect x="559.5" y="234.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="578.5" y="257.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">J</text>
+<rect x="601.5" y="234.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="620.5" y="257.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">K</text>
+<rect x="643.5" y="234.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="662.5" y="257.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">L</text>
+<rect x="685.5" y="234.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="704.5" y="257.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">;</text>
+<rect x="727.5" y="234.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="746.5" y="257.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">&#x27;</text>
+<rect x="769.5" y="234.0" width="90.5" height="38" rx="7" fill="url(#capMod)" stroke="#926DDE" stroke-opacity="0.45" stroke-width="0.7" />
+<text x="814.8" y="257.0" font-size="8.5" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">Enter</text>
+<rect x="864.0" y="234.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="883.0" y="257.0" font-size="8.5" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">Home</text>
+<rect x="234.0" y="276.0" width="90.5" height="38" rx="7" fill="url(#capMod)" stroke="#926DDE" stroke-opacity="0.45" stroke-width="0.7" />
+<text x="279.2" y="299.0" font-size="8.5" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">Shift</text>
+<rect x="328.5" y="276.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="347.5" y="299.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">Z</text>
+<rect x="370.5" y="276.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="389.5" y="299.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">X</text>
+<rect x="412.5" y="276.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="431.5" y="299.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">C</text>
+<rect x="454.5" y="276.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="473.5" y="299.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">V</text>
+<rect x="496.5" y="276.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="515.5" y="299.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">B</text>
+<rect x="538.5" y="276.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="557.5" y="299.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">N</text>
+<rect x="580.5" y="276.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="599.5" y="299.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">M</text>
+<rect x="622.5" y="276.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="641.5" y="299.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">,</text>
+<rect x="664.5" y="276.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="683.5" y="299.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">.</text>
+<rect x="706.5" y="276.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="725.5" y="299.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">/</text>
+<rect x="748.5" y="276.0" width="69.5" height="38" rx="7" fill="url(#capMod)" stroke="#926DDE" stroke-opacity="0.45" stroke-width="0.7" />
+<text x="783.2" y="299.0" font-size="8.5" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">Shift</text>
+<rect x="822.0" y="276.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="841.0" y="299.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">↑</text>
+<rect x="864.0" y="276.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="883.0" y="299.0" font-size="8.5" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">End</text>
+<rect x="234.0" y="318.0" width="48.5" height="38" rx="7" fill="url(#capMod)" stroke="#926DDE" stroke-opacity="0.45" stroke-width="0.7" />
+<text x="258.2" y="341.0" font-size="8.5" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">Ctrl</text>
+<rect x="286.5" y="318.0" width="48.5" height="38" rx="7" fill="url(#capMod)" stroke="#926DDE" stroke-opacity="0.45" stroke-width="0.7" />
+<text x="310.8" y="341.0" font-size="8.5" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">Opt</text>
+<rect x="339.0" y="318.0" width="48.5" height="38" rx="7" fill="url(#capMod)" stroke="#926DDE" stroke-opacity="0.45" stroke-width="0.7" />
+<text x="363.2" y="341.0" font-size="8.5" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">Cmd</text>
+<rect x="391.5" y="318.0" width="258.5" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="520.8" y="341.0" font-size="8.5" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">Space</text>
+<rect x="654.0" y="318.0" width="38.0" height="38" rx="7" fill="url(#capMod)" stroke="#926DDE" stroke-opacity="0.45" stroke-width="0.7" />
+<text x="673.0" y="341.0" font-size="8.5" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">Cmd</text>
+<rect x="696.0" y="318.0" width="38.0" height="38" rx="7" fill="url(#capMod)" stroke="#926DDE" stroke-opacity="0.45" stroke-width="0.7" />
+<text x="715.0" y="341.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">Fn</text>
+<rect x="738.0" y="318.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="757.0" y="341.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">←</text>
+<rect x="780.0" y="318.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="799.0" y="341.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">↓</text>
+<rect x="822.0" y="318.0" width="38.0" height="38" rx="7" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="0.7" />
+<text x="841.0" y="341.0" font-size="12" fill="#C7CBD6" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="500">→</text>
+
+ <!-- picker panel -->
+ <rect x="844" y="91" width="0.5" height="561" fill="#23262F"/>
+ <text x="860" y="98" font-size="14" fill="#E8EAF0" font-weight="600">E</text>
+ <text x="860" y="116" font-size="10" fill="#8A90A0" font-family="ui-monospace,Menlo,monospace">L0 · 2,3 · now KC_E</text>
+ <rect x="860" y="130" width="224" height="26" rx="6" fill="#1A1C24" stroke="#23262F"/>
+ <text x="870" y="147" font-size="11" fill="#8A90A0">Search…</text>
+ <text x="860" y="180" font-size="10" fill="#8A90A0" font-weight="700" letter-spacing="1">KEYCODES</text>
+ <rect x="860" y="194" width="224" height="26" rx="5" fill="#1A1C24" stroke="#23262F" stroke-width="0.5"/><text x="870" y="211" font-size="11" fill="#E8EAF0" font-family="ui-monospace,Menlo,monospace">KC_A</text><rect x="860" y="224" width="224" height="26" rx="5" fill="#1A1C24" stroke="#23262F" stroke-width="0.5"/><text x="870" y="241" font-size="11" fill="#E8EAF0" font-family="ui-monospace,Menlo,monospace">KC_B</text><rect x="860" y="254" width="224" height="26" rx="5" fill="#1A1C24" stroke="#23262F" stroke-width="0.5"/><text x="870" y="271" font-size="11" fill="#E8EAF0" font-family="ui-monospace,Menlo,monospace">KC_C</text><rect x="860" y="284" width="224" height="26" rx="5" fill="#1A1C24" stroke="#23262F" stroke-width="0.5"/><text x="870" y="301" font-size="11" fill="#E8EAF0" font-family="ui-monospace,Menlo,monospace">KC_ESC</text><rect x="860" y="314" width="224" height="26" rx="5" fill="#1A1C24" stroke="#23262F" stroke-width="0.5"/><text x="870" y="331" font-size="11" fill="#E8EAF0" font-family="ui-monospace,Menlo,monospace">KC_TAB</text><rect x="860" y="344" width="224" height="26" rx="5" fill="#1A1C24" stroke="#23262F" stroke-width="0.5"/><text x="870" y="361" font-size="11" fill="#E8EAF0" font-family="ui-monospace,Menlo,monospace">MO(1)</text><rect x="860" y="374" width="224" height="26" rx="5" fill="#1A1C24" stroke="#23262F" stroke-width="0.5"/><text x="870" y="391" font-size="11" fill="#E8EAF0" font-family="ui-monospace,Menlo,monospace">TG(1)</text><rect x="860" y="404" width="224" height="26" rx="5" fill="#1A1C24" stroke="#23262F" stroke-width="0.5"/><text x="870" y="421" font-size="11" fill="#E8EAF0" font-family="ui-monospace,Menlo,monospace">KC_LSFT</text><rect x="860" y="434" width="224" height="26" rx="5" fill="#1A1C24" stroke="#23262F" stroke-width="0.5"/><text x="870" y="451" font-size="11" fill="#E8EAF0" font-family="ui-monospace,Menlo,monospace">KC_ENT</text><rect x="860" y="464" width="224" height="26" rx="5" fill="#1A1C24" stroke="#23262F" stroke-width="0.5"/><text x="870" y="481" font-size="11" fill="#E8EAF0" font-family="ui-monospace,Menlo,monospace">KC_SPC</text>
+</g>
+</svg>
