@@ -1,0 +1,112 @@
+diff --git a/keyboards/keychron/common/keychron_raw_hid.c b/keyboards/keychron/common/keychron_raw_hid.c
+index e21776f..6a3c0e6 100644
+--- a/keyboards/keychron/common/keychron_raw_hid.c
++++ b/keyboards/keychron/common/keychron_raw_hid.c
+@@ -37,6 +37,7 @@
+ #endif
+ #ifdef LK_WIRELESS_ENABLE
+ #    include "wireless.h"
++#    include "battery.h"
+ #endif
+ 
+ extern void dfu_info_rx(uint8_t *data, uint8_t length);
+@@ -105,6 +106,16 @@ bool kc_raw_hid_rx(uint8_t *data, uint8_t length) {
+             data[1] = get_highest_layer(default_layer_state);
+             break;
+ 
++#ifdef LK_WIRELESS_ENABLE
++        case KC_GET_BATTERY: {
++            uint16_t mv = battery_get_voltage();
++            data[1] = battery_get_percentage();  // 0..100 %
++            data[2] = mv & 0xFF;                 // battery voltage low byte (mV)
++            data[3] = (mv >> 8) & 0xFF;          // battery voltage high byte (mV)
++            break;
++        }
++#endif
++
+         case 0xA7:
+             switch (data[1]) {
+                 case MISC_GET_PROTOCOL_VER:
+diff --git a/keyboards/keychron/common/keychron_raw_hid.h b/keyboards/keychron/common/keychron_raw_hid.h
+index 4419f0f..e669364 100644
+--- a/keyboards/keychron/common/keychron_raw_hid.h
++++ b/keyboards/keychron/common/keychron_raw_hid.h
+@@ -25,6 +25,7 @@ enum {
+     KC_GET_FIRMWARE_VERSION = 0xA1,
+     KC_GET_SUPPORT_FEATURE  = 0xA2,
+     KC_GET_DEFAULT_LAYER    = 0xA3,
++    KC_GET_BATTERY          = 0xA4,
+ };
+ 
+ enum {
+diff --git a/keyboards/keychron/common/wireless/bat_level_animation.c b/keyboards/keychron/common/wireless/bat_level_animation.c
+index 43269d6..2552bf8 100644
+--- a/keyboards/keychron/common/wireless/bat_level_animation.c
++++ b/keyboards/keychron/common/wireless/bat_level_animation.c
+@@ -73,7 +73,13 @@ void bat_level_animiation_start(uint8_t percentage) {
+     cur_percentage           = 0;
+     time_interval            = BAT_LEVEL_GROWING_INTERVAL;
+ #ifdef RGB_MATRIX_ENABLE
+-    r = g = b = 255;
++    if (percentage < 30) {        // low -> red
++        r = 255; g = 0; b = 0;
++    } else if (percentage < 60) { // medium -> amber
++        r = 255; g = 140; b = 0;
++    } else {                      // good -> green
++        r = 0; g = 255; b = 0;
++    }
+ #endif
+ }
+ 
+@@ -126,12 +132,12 @@ void bat_level_animiation_update(void) {
+ 
+         case BAT_LVL_ANI_BLINK_OFF:
+ #ifdef RGB_MATRIX_ENABLE
+-            if (bat_percentage < 30) {
+-                r = 255;
+-                b = g = 0;
+-            } else {
+-                r = b = 0;
+-                g     = 255;
++            if (bat_percentage < 30) {        // low -> red
++                r = 255; g = 0; b = 0;
++            } else if (bat_percentage < 60) { // medium -> amber
++                r = 255; g = 140; b = 0;
++            } else {                          // good -> green
++                r = 0; g = 255; b = 0;
+             }
+ #endif
+             time_interval   = BAT_LEVEL_ON_INTERVAL;
+diff --git a/keyboards/keychron/common/wireless/battery.c b/keyboards/keychron/common/wireless/battery.c
+index 60ab772..7af6614 100644
+--- a/keyboards/keychron/common/wireless/battery.c
++++ b/keyboards/keychron/common/wireless/battery.c
+@@ -217,6 +217,7 @@ void battery_task(void) {
+             }
+ 
+             battery_measure();
++            lkbt51_update_bat_lvl(battery_get_percentage()); // push level to module/dongle every cycle so 2.4G battery shows on the 0x008C channel (stock only pushes at connect)
+             if (power_on_sample < VOLTAGE_POWER_ON_MEASURE_COUNT) power_on_sample++;
+         }
+     }
+diff --git a/keyboards/keychron/common/wireless/keychron_wireless_common.c b/keyboards/keychron/common/wireless/keychron_wireless_common.c
+index 2fa6273..da9f3b5 100644
+--- a/keyboards/keychron/common/wireless/keychron_wireless_common.c
++++ b/keyboards/keychron/common/wireless/keychron_wireless_common.c
+@@ -65,8 +65,14 @@ bool process_record_keychron_wireless(uint16_t keycode, keyrecord_t *record) {
+             break;
+ #if (defined(LED_MATRIX_ENABLE) || defined(RGB_MATRIX_ENABLE)) && defined(BAT_LEVEL_LED_LIST)
+         case BAT_LVL:
+-            if ((get_transport() & TRANSPORT_WIRELESS) && !usb_power_connected()) {
+-                bat_level_animiation_start(battery_get_percentage());
++            if (record->event.pressed && (get_transport() & TRANSPORT_WIRELESS) && !usb_power_connected()) {
++                uint8_t pct = battery_get_percentage();
++                bat_level_animiation_start(pct);  // on-keyboard colour gauge: red/amber/green by level
++                /* Best-effort refresh of the module's cached battery so the next RF connect-emit
++                   carries a current value. NOTE: the 2.4G dongle does NOT forward a mid-session push
++                   to the host (verified) — it only re-emits 0x008C at RF (re)connect, so this does
++                   not make the host app update on the keypress itself. */
++                lkbt51_update_bat_lvl(pct);
+             }
+             break;
+ #endif

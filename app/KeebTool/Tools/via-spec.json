@@ -1,0 +1,2069 @@
+{
+ "protocol": {
+  "raw_hid": "RAW_EPSIZE / report size: 32 bytes. The keyboard's raw HID handler is void raw_hid_receive(uint8_t *data, uint8_t length) (quantum/via.c:279) and it always echoes the full buffer back with raw_hid_send(data, length) (quantum/via.c:461). In QMK core RAW_EPSIZE == 32, so every transaction is a fixed 32-byte report in and a 32-byte report out. There is no length prefix; unused trailing bytes are simply ignored on receive and echoed/garbage on response.\n\nPAYLOAD vs reportID (macOS / IOKit): On macOS, IOHIDDevice / IOHIDDeviceSetReport prepends the HID report ID as the first byte of the transfer. QMK raw HID uses report ID 0 (no numbered reports), so the host must send a 33-byte transfer = [0x00 reportID] + [32-byte payload], OR use the IOKit API in the mode where the report ID is passed as a separate argument and the data buffer is the 32-byte payload. The KEY POINT for the implementer: the firmware's data[] is the 32-byte payload only. data[0] = command id (one of enum via_command_id), data[1..31] = command_data (command_data = &data[1], quantum/via.c:281). So payload[0] = command id, and on IOKit you must add the leading reportID 0 byte that is NOT part of the 32-byte payload the firmware sees. When reading the response, strip the leading report-ID byte (if your read path includes it) to recover the 32-byte payload; data[0] of the response is the (possibly id_unhandled=0xFF) command id echo.\n\nEndianness of multi-byte keycodes: BIG-ENDIAN, high byte first. A 16-bit keycode is always [high_byte, low_byte]. See dynamic_keymap_get_keycode setting command_data[3]=keycode>>8, command_data[4]=keycode&0xFF (quantum/via.c:372-373) and set_keycode reading (command_data[3]<<8)|command_data[4] (quantum/via.c:377). EEPROM itself stores keycodes big-endian (dynamic_keymap.c:127-129, 146-148; dynamic_keymap.h:31 \"Data is big-endian 16-bit values\"), so buffer reads/writes (get_buffer/set_buffer) return/accept raw big-endian keycode bytes. Encoders are likewise big-endian (dynamic_keymap.c:160-171). Multi-byte 32-bit values (uptime, layout_options, firmware_version) are also big-endian, MSB first (quantum/via.c:298-311, 333-337).\n\n16-bit length/size and offset fields are ALSO big-endian: protocol version is command_data[0]=ver>>8, command_data[1]=ver&0xFF (quantum/via.c:291-292); macro buffer size is command_data[0]=size>>8, command_data[1]=size&0xFF (quantum/via.c:403-404); all buffer offsets are read as offset=(command_data[0]<<8)|command_data[1] (quantum/via.c:408, 414, 428, 434).\n\nget_buffer / set_buffer chunking (offset + size): All four buffer commands (dynamic_keymap get/set buffer 0x12/0x13, macro get/set buffer 0x0E/0x0F) use the same wire layout. command_data[0..1] = 16-bit BIG-ENDIAN byte offset into the target buffer; command_data[2] = size (uint8, number of bytes this chunk transfers); command_data[3..] = the data bytes (read into or written from &command_data[3]). Because the report payload is 32 bytes and the header occupies payload[0]=cmd, payload[1..2]=offset, payload[3]=size, the data window is payload[4..31] = 28 bytes max. Hence size <= 28 (the firmware literally comments \"size <= 28\" at quantum/via.c:409, 415, 429, 435). To transfer a whole keymap or macro buffer, the host loops: chunk k uses offset = k*28, size = min(28, remaining), reading/writing 28 bytes per raw HID transfer. Note offset is in BYTES, and since keycodes are 2 bytes each, 28 bytes = 14 keycodes per transfer (dynamic_keymap.h:35-37). On get_buffer, bytes past the end of the real buffer are zero-filled (dynamic_keymap.c:210-214); on set_buffer, writes past the end are silently dropped (dynamic_keymap.c:224-228).\n\nIndexing note for keymap buffer: byte offset for (layer,row,col) = (layer*MATRIX_ROWS*MATRIX_COLS*2) + (row*MATRIX_COLS*2) + (col*2) (dynamic_keymap.c:115-118; dynamic_keymap.h:32-34). Total keymap buffer size = DYNAMIC_KEYMAP_LAYER_COUNT * MATRIX_ROWS * MATRIX_COLS * 2 (dynamic_keymap.c:206).",
+  "commands": [
+   {
+    "name": "id_get_protocol_version",
+    "id": "0x01",
+    "purpose": "Return the VIA protocol version so the host (VIA Configurator) can confirm compatible firmware. Here VIA_PROTOCOL_VERSION = 0x000C (quantum/via.h:62).",
+    "request": "REQUEST (32-byte payload): payload[0]=0x01 (command id). payload[1..31]=don't care. Defined at quantum/via.h:75, handled at quantum/via.c:290-294.",
+    "response": "RESPONSE: byte0 (payload[0]) = 0x01 (command id echoed). byte1 (command_data[0]) = version high byte = VIA_PROTOCOL_VERSION>>8 = 0x00. byte2 (command_data[1]) = version low byte = VIA_PROTOCOL_VERSION&0xFF = 0x0C. So a v12 keyboard returns [0x01, 0x00, 0x0C, ...]. Big-endian 16-bit. quantum/via.c:291-292."
+   },
+   {
+    "name": "id_dynamic_keymap_get_keycode",
+    "id": "0x04",
+    "purpose": "Read the 16-bit keycode at (layer,row,column) from the dynamic keymap in EEPROM.",
+    "request": "REQUEST: payload[0]=0x04; payload[1] (command_data[0])=layer; payload[2] (command_data[1])=row; payload[3] (command_data[2])=column. quantum/via.h:78, quantum/via.c:370-374. Underlying read dynamic_keymap.c:120-133 (returns KC_NO=0x0000 if layer/row/col out of range).",
+    "response": "RESPONSE: byte0=0x04; bytes1-3 = layer,row,column echoed (unchanged); byte4 (command_data[3]) = keycode high byte (keycode>>8); byte5 (command_data[4]) = keycode low byte (keycode&0xFF). Big-endian. quantum/via.c:371-373."
+   },
+   {
+    "name": "id_dynamic_keymap_set_keycode",
+    "id": "0x05",
+    "purpose": "Write a 16-bit keycode to (layer,row,column) in the dynamic keymap EEPROM.",
+    "request": "REQUEST: payload[0]=0x05; payload[1] (command_data[0])=layer; payload[2] (command_data[1])=row; payload[3] (command_data[2])=column; payload[4] (command_data[3])=keycode high byte; payload[5] (command_data[4])=keycode low byte. Firmware reconstructs keycode=(command_data[3]<<8)|command_data[4] (big-endian). quantum/via.h:79, quantum/via.c:376-378. Underlying write dynamic_keymap.c:135-150 (no-op if out of range).",
+    "response": "RESPONSE: full 32-byte buffer echoed unchanged (byte0=0x05, layer/row/col/keycode bytes as sent). No extra data is written by the handler; it just acknowledges by echo. quantum/via.c:461."
+   },
+   {
+    "name": "id_dynamic_keymap_get_buffer",
+    "id": "0x12",
+    "purpose": "Bulk-read a chunk of the raw dynamic keymap EEPROM buffer (big-endian keycodes, ordered layer/row/column). Lets host read up to 14 keycodes (28 bytes) per transfer.",
+    "request": "REQUEST: payload[0]=0x12; payload[1..2] (command_data[0..1]) = 16-bit BIG-ENDIAN byte offset = (command_data[0]<<8)|command_data[1]; payload[3] (command_data[2]) = size (bytes, <=28); payload[4..] = don't care. quantum/via.h:92, quantum/via.c:427-431. Underlying read dynamic_keymap.c:205-218.",
+    "response": "RESPONSE: byte0=0x12; bytes1-3 = offset_hi, offset_lo, size echoed; bytes4.. (&command_data[3]) = 'size' bytes read from EEPROM at DYNAMIC_KEYMAP_EEPROM_ADDR+offset. Bytes beyond the real keymap size (LAYER_COUNT*ROWS*COLS*2) are returned as 0x00. quantum/via.c:430, dynamic_keymap.c:209-217."
+   },
+   {
+    "name": "id_dynamic_keymap_set_buffer",
+    "id": "0x13",
+    "purpose": "Bulk-write a chunk of the raw dynamic keymap EEPROM buffer (big-endian keycodes). Up to 28 bytes (14 keycodes) per transfer.",
+    "request": "REQUEST: payload[0]=0x13; payload[1..2] (command_data[0..1]) = 16-bit BIG-ENDIAN byte offset; payload[3] (command_data[2]) = size (bytes, <=28); payload[4..(4+size-1)] (&command_data[3]) = the data bytes to write. quantum/via.h:93, quantum/via.c:433-437. Underlying write dynamic_keymap.c:220-231 (writes past the keymap size are silently dropped).",
+    "response": "RESPONSE: full 32-byte buffer echoed unchanged (byte0=0x13, offset/size/data as sent). Acknowledge-by-echo only. quantum/via.c:461."
+   },
+   {
+    "name": "id_dynamic_keymap_get_layer_count",
+    "id": "0x11",
+    "purpose": "Return the number of dynamic keymap layers (DYNAMIC_KEYMAP_LAYER_COUNT, default 4, dynamic_keymap.c:39-41).",
+    "request": "REQUEST: payload[0]=0x11; payload[1..31]=don't care. quantum/via.h:91, quantum/via.c:423-426.",
+    "response": "RESPONSE: byte0=0x11; byte1 (command_data[0]) = layer count (e.g. 0x04). Single byte. quantum/via.c:424, dynamic_keymap.c:111-113."
+   },
+   {
+    "name": "id_dynamic_keymap_get_encoder",
+    "id": "0x14",
+    "purpose": "Read the 16-bit keycode bound to an encoder rotation. Only compiled when ENCODER_MAP_ENABLE is defined (quantum/via.c:439-445). If not enabled, this id falls through to default and returns id_unhandled (0xFF) in byte0.",
+    "request": "REQUEST: payload[0]=0x14; payload[1] (command_data[0])=layer; payload[2] (command_data[1])=encoder_id; payload[3] (command_data[2])=direction: 0 = counter-clockwise, non-zero (1) = clockwise (firmware uses command_data[2]!=0). quantum/via.h:94, quantum/via.c:440-444. Underlying read dynamic_keymap.c:157-164 (KC_NO if out of range).",
+    "response": "RESPONSE: byte0=0x14; bytes1-3 = layer,encoder_id,direction echoed; byte4 (command_data[3]) = keycode high byte; byte5 (command_data[4]) = keycode low byte. Big-endian. quantum/via.c:441-443."
+   },
+   {
+    "name": "id_dynamic_keymap_set_encoder",
+    "id": "0x15",
+    "purpose": "Write the 16-bit keycode for an encoder rotation. Only compiled when ENCODER_MAP_ENABLE is defined; otherwise returns id_unhandled (0xFF).",
+    "request": "REQUEST: payload[0]=0x15; payload[1] (command_data[0])=layer; payload[2] (command_data[1])=encoder_id; payload[3] (command_data[2])=direction (0=CCW, non-zero=CW); payload[4] (command_data[3])=keycode high byte; payload[5] (command_data[4])=keycode low byte. keycode=(command_data[3]<<8)|command_data[4], big-endian. quantum/via.h:95, quantum/via.c:446-448. Underlying write dynamic_keymap.c:166-172.",
+    "response": "RESPONSE: full 32-byte buffer echoed unchanged (byte0=0x15, params as sent). Acknowledge-by-echo only. quantum/via.c:461."
+   },
+   {
+    "name": "id_dynamic_keymap_macro_get_count",
+    "id": "0x0C",
+    "purpose": "Return the maximum number of macros that can be stored (DYNAMIC_KEYMAP_MACRO_COUNT, default 16, dynamic_keymap.c:43-45). NOTE: this is the capacity, not the current count of stored macros (dynamic_keymap.h:61-62).",
+    "request": "REQUEST: payload[0]=0x0C; payload[1..31]=don't care. quantum/via.h:86, quantum/via.c:397-400.",
+    "response": "RESPONSE: byte0=0x0C; byte1 (command_data[0]) = macro count (e.g. 0x10 for 16). Single byte. quantum/via.c:398, dynamic_keymap.c:260-262."
+   },
+   {
+    "name": "id_dynamic_keymap_macro_get_buffer_size",
+    "id": "0x0D",
+    "purpose": "Return the total size in bytes of the macro EEPROM buffer (DYNAMIC_KEYMAP_MACRO_EEPROM_SIZE).",
+    "request": "REQUEST: payload[0]=0x0D; payload[1..31]=don't care. quantum/via.h:87, quantum/via.c:401-405.",
+    "response": "RESPONSE: byte0=0x0D; byte1 (command_data[0]) = size high byte (size>>8); byte2 (command_data[1]) = size low byte (size&0xFF). 16-bit BIG-ENDIAN. quantum/via.c:403-404, dynamic_keymap.c:264-266."
+   },
+   {
+    "name": "id_dynamic_keymap_macro_get_buffer",
+    "id": "0x0E",
+    "purpose": "Bulk-read a chunk of the macro buffer (list of null-terminated SS_* macro strings). Up to 28 bytes per transfer.",
+    "request": "REQUEST: payload[0]=0x0E; payload[1..2] (command_data[0..1]) = 16-bit BIG-ENDIAN byte offset; payload[3] (command_data[2]) = size (bytes, <=28); payload[4..]=don't care. quantum/via.h:88, quantum/via.c:407-412. Underlying read dynamic_keymap.c:268-280.",
+    "response": "RESPONSE: byte0=0x0E; bytes1-3 = offset_hi, offset_lo, size echoed; bytes4.. (&command_data[3]) = 'size' bytes read from macro EEPROM at DYNAMIC_KEYMAP_MACRO_EEPROM_ADDR+offset. Bytes past DYNAMIC_KEYMAP_MACRO_EEPROM_SIZE are returned as 0x00. quantum/via.c:410, dynamic_keymap.c:272-278."
+   },
+   {
+    "name": "id_dynamic_keymap_macro_set_buffer",
+    "id": "0x0F",
+    "purpose": "Bulk-write a chunk of the macro buffer. Up to 28 bytes per transfer. Host protocol: the macro buffer holds null-terminated strings; to safely write, host should first set the LAST byte of the buffer to non-zero (e.g. 0xFF) to mark in-progress, write all chunks, then set the last byte to 0x00 when done (dynamic_keymap.h:44-56). macro_send refuses to run while the last byte is non-zero (dynamic_keymap.c:308-315).",
+    "request": "REQUEST: payload[0]=0x0F; payload[1..2] (command_data[0..1]) = 16-bit BIG-ENDIAN byte offset; payload[3] (command_data[2]) = size (bytes, <=28); payload[4..(4+size-1)] (&command_data[3]) = data bytes to write. quantum/via.h:89, quantum/via.c:413-417. Underlying write dynamic_keymap.c:282-292 (writes past buffer size silently dropped).",
+    "response": "RESPONSE: full 32-byte buffer echoed unchanged (byte0=0x0F, offset/size/data as sent). Acknowledge-by-echo only. quantum/via.c:461."
+   },
+   {
+    "name": "id_dynamic_keymap_macro_reset",
+    "id": "0x10",
+    "purpose": "Clear the entire macro buffer (zero-fill all DYNAMIC_KEYMAP_MACRO_EEPROM_SIZE bytes).",
+    "request": "REQUEST: payload[0]=0x10; payload[1..31]=don't care. quantum/via.h:90, quantum/via.c:419-422. Underlying dynamic_keymap.c:294-301.",
+    "response": "RESPONSE: byte0=0x10; rest of buffer echoed unchanged. Acknowledge-by-echo only (no data written by handler). quantum/via.c:461."
+   },
+   {
+    "name": "id_custom_get_value",
+    "id": "0x08",
+    "purpose": "Read a 'custom value' for a sub-feature channel (lighting, audio, etc.). Routed by channel id to the matching handler; if the channel/value is unknown or the feature is not compiled in, byte0 is set to id_unhandled (0xFF).",
+    "request": "REQUEST: data = [command_id, channel_id, value_id, value_data...]. payload[0]=0x08; payload[1] (command_data[0])=channel_id (enum via_channel_id, quantum/via.h:107-114: 0=custom,1=qmk_backlight,2=qmk_rgblight,3=qmk_rgb_matrix,4=qmk_audio,5=qmk_led_matrix); payload[2] (command_data[1])=value_id (channel-specific, e.g. brightness=1, effect=2, effect_speed=3, color=4; quantum/via.h:116-144); payload[3..] = value_data placeholder (filled in response). Dispatch: quantum/via.c:384-389 -> via_custom_value_command (225-270) -> channel handler -> get_value reads value_id_and_data = &data[2].",
+    "response": "RESPONSE: byte0=0x08 (or 0xFF if unhandled); byte1=channel_id echoed; byte2=value_id echoed; byte3.. (&data[3], i.e. value_data after value_id) = the value bytes. Most values are 1 byte at byte3 (e.g. brightness, effect, speed). 'color' returns 2 bytes: byte3=hue, byte4=sat (e.g. quantum/via.c:592-595 rgblight, 680-684 rgb_matrix). Audio enable/clicky return 1 byte 0/1 (855-868). For rgb/led matrix, effect getter returns 0 when disabled else current mode (672-674, 784-786)."
+   },
+   {
+    "name": "id_custom_set_value",
+    "id": "0x07",
+    "purpose": "Write a 'custom value' for a sub-feature channel (applied immediately, _noeeprom variants - not persisted until id_custom_save). Unknown channel/value or disabled feature => byte0=id_unhandled (0xFF).",
+    "request": "REQUEST: data = [command_id, channel_id, value_id, value_data...]. payload[0]=0x07; payload[1] (command_data[0])=channel_id; payload[2] (command_data[1])=value_id; payload[3..] = value_data: 1 byte for brightness/effect/speed/enable; for 'color' 2 bytes (byte3=hue, byte4=sat). Dispatch quantum/via.c:384-389 -> via_custom_value_command (225-270) -> channel handler -> set_value operates on value_id_and_data=&data[2] (e.g. 516-537 backlight, 600-627 rgblight, 688-716 rgb_matrix, 795-818 led_matrix, 871-885 audio).",
+    "response": "RESPONSE: full 32-byte buffer echoed unchanged (byte0=0x07 unless unhandled=0xFF; channel_id/value_id/value_data as sent). Acknowledge-by-echo. quantum/via.c:461."
+   },
+   {
+    "name": "id_custom_save",
+    "id": "0x09",
+    "purpose": "Persist the current custom values for a channel to EEPROM (e.g. eeconfig_update_*). Unknown channel or disabled feature => byte0=id_unhandled (0xFF).",
+    "request": "REQUEST: data = [command_id, channel_id, ...]. payload[0]=0x09; payload[1] (command_data[0])=channel_id (which sub-feature to save). value_id is not required for save. Dispatch quantum/via.c:384-389 -> via_custom_value_command (225-270) -> channel handler's save case (e.g. backlight 480-483/539-541, rgblight 564-566/629-631, rgb_matrix 651-653/718-743, led_matrix 763-765/820-822, audio 844-846/887-889).",
+    "response": "RESPONSE: full 32-byte buffer echoed unchanged (byte0=0x09 unless unhandled=0xFF). Acknowledge-by-echo. quantum/via.c:461."
+   }
+  ],
+  "notes": "Source files (all absolute):\n- /Users/vfi/keychron-qmk/quantum/via.c \u2014 raw_hid_receive command dispatch (switch at lines 289-457), echo-back at line 461; custom-value routing via_custom_value_command (225-270) and per-channel handlers (backlight 466+, rgblight 550+, rgb_matrix 637+, led_matrix 749+, audio 830+).\n- /Users/vfi/keychron-qmk/quantum/via.h \u2014 command id enum (74-97), VIA_PROTOCOL_VERSION 0x000C (line 62), keyboard-value ids (99-105), channel ids (107-114), per-channel value ids (116-144).\n- /Users/vfi/keychron-qmk/quantum/dynamic_keymap.c \u2014 keycode/encoder/buffer/macro implementations and EEPROM layout (lines 111-386); big-endian storage at 127-129, 146-148, 160-171.\n- /Users/vfi/keychron-qmk/quantum/dynamic_keymap.h \u2014 function prototypes and the big-endian / buffer-chunking / macro-valid-flag protocol notes (lines 30-68).\n\nCRITICAL IMPLEMENTATION FACTS:\n1. Report size is 32 bytes (RAW_EPSIZE in QMK core). Every request is a 32-byte payload; the firmware always replies by echoing the same 32-byte buffer, mutated in place (raw_hid_send(data,length), via.c:461). There is no separate ACK/length field.\n2. On macOS IOKit, prepend reportID 0: the on-wire transfer is [0x00] + 32-byte payload, but firmware-visible data[0] = command id. command_data = &data[1] (via.c:281), so payload offsets in my command layouts are relative to the 32-byte payload (payload[0]=cmd).\n3. ALL multi-byte integers are BIG-ENDIAN, high byte first: 16-bit keycodes, encoder keycodes, protocol version, macro buffer size, and the 16-bit offset field in every buffer command; 32-bit values (uptime/layout_options/firmware_version) too.\n4. Buffer chunking (ids 0x0E,0x0F,0x12,0x13): payload[1..2]=16-bit BE byte offset, payload[3]=size (<=28 because the data window is payload[4..31] = 28 bytes), data at payload[4..]. Loop with offset += 28 per transfer. 28 bytes = 14 keycodes. get_buffer zero-fills past end; set_buffer drops writes past end.\n5. Unknown command id, unknown keyboard/custom value, or a feature that is not compiled in => the handler sets data[0] = id_unhandled = 0xFF (via.h:96). So the host detects \"unsupported\" by checking response byte0 == 0xFF (rather than == request id).\n6. Encoder commands (0x14/0x15) only exist when ENCODER_MAP_ENABLE is compiled in; otherwise they hit the default branch and return 0xFF in byte0.\n7. Macro write protocol: set last buffer byte non-zero (0xFF) before writing, write chunks via 0x0F, then set last byte to 0x00. macro_send aborts while last byte != 0 (dynamic_keymap.c:308-315). Macro strings are null-terminated; SS_QMK_PREFIX (0x01) introduces tap/down/up/delay codes (dynamic_keymap.c:344-383).\n8. macro_get_count (0x0C) and get_layer_count (0x11) each return a single byte at command_data[0] (payload byte1). macro_get_count returns capacity (default 16), NOT the number of macros actually stored.\n\nOther ids present in the firmware but not requested: id_get_keyboard_value=0x02 (sub-ids uptime/layout_options/switch_matrix_state/firmware_version/device_indication), id_set_keyboard_value=0x03 (layout_options, device_indication), id_dynamic_keymap_reset=0x06, id_eeprom_reset=0x0A (only if VIA_EEPROM_ALLOW_RESET defined), id_bootloader_jump=0x0B (declared in enum at via.h:85 but NOT handled in this raw_hid_receive switch, so it returns 0xFF here)."
+ },
+ "layout": {
+  "layer_count": 4,
+  "matrix_rows": 6,
+  "matrix_cols": 16,
+  "keys": [
+   {
+    "label": "Esc",
+    "x": 0,
+    "y": 0,
+    "w": 1,
+    "h": 1,
+    "row": 0,
+    "col": 0
+   },
+   {
+    "label": "BrtDn",
+    "x": 1.25,
+    "y": 0,
+    "w": 1,
+    "h": 1,
+    "row": 0,
+    "col": 1
+   },
+   {
+    "label": "BrtUp",
+    "x": 2.25,
+    "y": 0,
+    "w": 1,
+    "h": 1,
+    "row": 0,
+    "col": 2
+   },
+   {
+    "label": "MissionCtrl",
+    "x": 3.25,
+    "y": 0,
+    "w": 1,
+    "h": 1,
+    "row": 0,
+    "col": 3
+   },
+   {
+    "label": "Launchpad",
+    "x": 4.25,
+    "y": 0,
+    "w": 1,
+    "h": 1,
+    "row": 0,
+    "col": 4
+   },
+   {
+    "label": "RGB_VAD",
+    "x": 5.5,
+    "y": 0,
+    "w": 1,
+    "h": 1,
+    "row": 0,
+    "col": 5
+   },
+   {
+    "label": "RGB_VAI",
+    "x": 6.5,
+    "y": 0,
+    "w": 1,
+    "h": 1,
+    "row": 0,
+    "col": 6
+   },
+   {
+    "label": "Prev",
+    "x": 7.5,
+    "y": 0,
+    "w": 1,
+    "h": 1,
+    "row": 0,
+    "col": 7
+   },
+   {
+    "label": "Play",
+    "x": 8.5,
+    "y": 0,
+    "w": 1,
+    "h": 1,
+    "row": 0,
+    "col": 8
+   },
+   {
+    "label": "Next",
+    "x": 9.75,
+    "y": 0,
+    "w": 1,
+    "h": 1,
+    "row": 0,
+    "col": 9
+   },
+   {
+    "label": "Mute",
+    "x": 10.75,
+    "y": 0,
+    "w": 1,
+    "h": 1,
+    "row": 0,
+    "col": 10
+   },
+   {
+    "label": "VolDn",
+    "x": 11.75,
+    "y": 0,
+    "w": 1,
+    "h": 1,
+    "row": 0,
+    "col": 11
+   },
+   {
+    "label": "VolUp",
+    "x": 12.75,
+    "y": 0,
+    "w": 1,
+    "h": 1,
+    "row": 0,
+    "col": 12
+   },
+   {
+    "label": "Del",
+    "x": 14,
+    "y": 0,
+    "w": 1,
+    "h": 1,
+    "row": 0,
+    "col": 13
+   },
+   {
+    "label": "Mute (knob)",
+    "x": 15.25,
+    "y": 0,
+    "w": 1,
+    "h": 1,
+    "row": 0,
+    "col": 15
+   },
+   {
+    "label": "`",
+    "x": 0,
+    "y": 1.25,
+    "w": 1,
+    "h": 1,
+    "row": 1,
+    "col": 0
+   },
+   {
+    "label": "1",
+    "x": 1,
+    "y": 1.25,
+    "w": 1,
+    "h": 1,
+    "row": 1,
+    "col": 1
+   },
+   {
+    "label": "2",
+    "x": 2,
+    "y": 1.25,
+    "w": 1,
+    "h": 1,
+    "row": 1,
+    "col": 2
+   },
+   {
+    "label": "3",
+    "x": 3,
+    "y": 1.25,
+    "w": 1,
+    "h": 1,
+    "row": 1,
+    "col": 3
+   },
+   {
+    "label": "4",
+    "x": 4,
+    "y": 1.25,
+    "w": 1,
+    "h": 1,
+    "row": 1,
+    "col": 4
+   },
+   {
+    "label": "5",
+    "x": 5,
+    "y": 1.25,
+    "w": 1,
+    "h": 1,
+    "row": 1,
+    "col": 5
+   },
+   {
+    "label": "6",
+    "x": 6,
+    "y": 1.25,
+    "w": 1,
+    "h": 1,
+    "row": 1,
+    "col": 6
+   },
+   {
+    "label": "7",
+    "x": 7,
+    "y": 1.25,
+    "w": 1,
+    "h": 1,
+    "row": 1,
+    "col": 7
+   },
+   {
+    "label": "8",
+    "x": 8,
+    "y": 1.25,
+    "w": 1,
+    "h": 1,
+    "row": 1,
+    "col": 8
+   },
+   {
+    "label": "9",
+    "x": 9,
+    "y": 1.25,
+    "w": 1,
+    "h": 1,
+    "row": 1,
+    "col": 9
+   },
+   {
+    "label": "0",
+    "x": 10,
+    "y": 1.25,
+    "w": 1,
+    "h": 1,
+    "row": 1,
+    "col": 10
+   },
+   {
+    "label": "-",
+    "x": 11,
+    "y": 1.25,
+    "w": 1,
+    "h": 1,
+    "row": 1,
+    "col": 11
+   },
+   {
+    "label": "=",
+    "x": 12,
+    "y": 1.25,
+    "w": 1,
+    "h": 1,
+    "row": 1,
+    "col": 12
+   },
+   {
+    "label": "Backspace",
+    "x": 13,
+    "y": 1.25,
+    "w": 2,
+    "h": 1,
+    "row": 1,
+    "col": 13
+   },
+   {
+    "label": "PgUp",
+    "x": 15.25,
+    "y": 1.25,
+    "w": 1,
+    "h": 1,
+    "row": 1,
+    "col": 15
+   },
+   {
+    "label": "Tab",
+    "x": 0,
+    "y": 2.25,
+    "w": 1.5,
+    "h": 1,
+    "row": 2,
+    "col": 0
+   },
+   {
+    "label": "Q",
+    "x": 1.5,
+    "y": 2.25,
+    "w": 1,
+    "h": 1,
+    "row": 2,
+    "col": 1
+   },
+   {
+    "label": "W",
+    "x": 2.5,
+    "y": 2.25,
+    "w": 1,
+    "h": 1,
+    "row": 2,
+    "col": 2
+   },
+   {
+    "label": "E",
+    "x": 3.5,
+    "y": 2.25,
+    "w": 1,
+    "h": 1,
+    "row": 2,
+    "col": 3
+   },
+   {
+    "label": "R",
+    "x": 4.5,
+    "y": 2.25,
+    "w": 1,
+    "h": 1,
+    "row": 2,
+    "col": 4
+   },
+   {
+    "label": "T",
+    "x": 5.5,
+    "y": 2.25,
+    "w": 1,
+    "h": 1,
+    "row": 2,
+    "col": 5
+   },
+   {
+    "label": "Y",
+    "x": 6.5,
+    "y": 2.25,
+    "w": 1,
+    "h": 1,
+    "row": 2,
+    "col": 6
+   },
+   {
+    "label": "U",
+    "x": 7.5,
+    "y": 2.25,
+    "w": 1,
+    "h": 1,
+    "row": 2,
+    "col": 7
+   },
+   {
+    "label": "I",
+    "x": 8.5,
+    "y": 2.25,
+    "w": 1,
+    "h": 1,
+    "row": 2,
+    "col": 8
+   },
+   {
+    "label": "O",
+    "x": 9.5,
+    "y": 2.25,
+    "w": 1,
+    "h": 1,
+    "row": 2,
+    "col": 9
+   },
+   {
+    "label": "P",
+    "x": 10.5,
+    "y": 2.25,
+    "w": 1,
+    "h": 1,
+    "row": 2,
+    "col": 10
+   },
+   {
+    "label": "[",
+    "x": 11.5,
+    "y": 2.25,
+    "w": 1,
+    "h": 1,
+    "row": 2,
+    "col": 11
+   },
+   {
+    "label": "]",
+    "x": 12.5,
+    "y": 2.25,
+    "w": 1,
+    "h": 1,
+    "row": 2,
+    "col": 12
+   },
+   {
+    "label": "\\",
+    "x": 13.5,
+    "y": 2.25,
+    "w": 1.5,
+    "h": 1,
+    "row": 2,
+    "col": 13
+   },
+   {
+    "label": "PgDn",
+    "x": 15.25,
+    "y": 2.25,
+    "w": 1,
+    "h": 1,
+    "row": 2,
+    "col": 15
+   },
+   {
+    "label": "Caps Lock",
+    "x": 0,
+    "y": 3.25,
+    "w": 1.75,
+    "h": 1,
+    "row": 3,
+    "col": 0
+   },
+   {
+    "label": "A",
+    "x": 1.75,
+    "y": 3.25,
+    "w": 1,
+    "h": 1,
+    "row": 3,
+    "col": 1
+   },
+   {
+    "label": "S",
+    "x": 2.75,
+    "y": 3.25,
+    "w": 1,
+    "h": 1,
+    "row": 3,
+    "col": 2
+   },
+   {
+    "label": "D",
+    "x": 3.75,
+    "y": 3.25,
+    "w": 1,
+    "h": 1,
+    "row": 3,
+    "col": 3
+   },
+   {
+    "label": "F",
+    "x": 4.75,
+    "y": 3.25,
+    "w": 1,
+    "h": 1,
+    "row": 3,
+    "col": 4
+   },
+   {
+    "label": "G",
+    "x": 5.75,
+    "y": 3.25,
+    "w": 1,
+    "h": 1,
+    "row": 3,
+    "col": 5
+   },
+   {
+    "label": "H",
+    "x": 6.75,
+    "y": 3.25,
+    "w": 1,
+    "h": 1,
+    "row": 3,
+    "col": 6
+   },
+   {
+    "label": "J",
+    "x": 7.75,
+    "y": 3.25,
+    "w": 1,
+    "h": 1,
+    "row": 3,
+    "col": 7
+   },
+   {
+    "label": "K",
+    "x": 8.75,
+    "y": 3.25,
+    "w": 1,
+    "h": 1,
+    "row": 3,
+    "col": 8
+   },
+   {
+    "label": "L",
+    "x": 9.75,
+    "y": 3.25,
+    "w": 1,
+    "h": 1,
+    "row": 3,
+    "col": 9
+   },
+   {
+    "label": ";",
+    "x": 10.75,
+    "y": 3.25,
+    "w": 1,
+    "h": 1,
+    "row": 3,
+    "col": 10
+   },
+   {
+    "label": "'",
+    "x": 11.75,
+    "y": 3.25,
+    "w": 1,
+    "h": 1,
+    "row": 3,
+    "col": 11
+   },
+   {
+    "label": "Enter",
+    "x": 12.75,
+    "y": 3.25,
+    "w": 2.25,
+    "h": 1,
+    "row": 3,
+    "col": 13
+   },
+   {
+    "label": "Home",
+    "x": 15.25,
+    "y": 3.25,
+    "w": 1,
+    "h": 1,
+    "row": 3,
+    "col": 15
+   },
+   {
+    "label": "Shift",
+    "x": 0,
+    "y": 4.25,
+    "w": 2.25,
+    "h": 1,
+    "row": 4,
+    "col": 0
+   },
+   {
+    "label": "Z",
+    "x": 2.25,
+    "y": 4.25,
+    "w": 1,
+    "h": 1,
+    "row": 4,
+    "col": 2
+   },
+   {
+    "label": "X",
+    "x": 3.25,
+    "y": 4.25,
+    "w": 1,
+    "h": 1,
+    "row": 4,
+    "col": 3
+   },
+   {
+    "label": "C",
+    "x": 4.25,
+    "y": 4.25,
+    "w": 1,
+    "h": 1,
+    "row": 4,
+    "col": 4
+   },
+   {
+    "label": "V",
+    "x": 5.25,
+    "y": 4.25,
+    "w": 1,
+    "h": 1,
+    "row": 4,
+    "col": 5
+   },
+   {
+    "label": "B",
+    "x": 6.25,
+    "y": 4.25,
+    "w": 1,
+    "h": 1,
+    "row": 4,
+    "col": 6
+   },
+   {
+    "label": "N",
+    "x": 7.25,
+    "y": 4.25,
+    "w": 1,
+    "h": 1,
+    "row": 4,
+    "col": 7
+   },
+   {
+    "label": "M",
+    "x": 8.25,
+    "y": 4.25,
+    "w": 1,
+    "h": 1,
+    "row": 4,
+    "col": 8
+   },
+   {
+    "label": ",",
+    "x": 9.25,
+    "y": 4.25,
+    "w": 1,
+    "h": 1,
+    "row": 4,
+    "col": 9
+   },
+   {
+    "label": ".",
+    "x": 10.25,
+    "y": 4.25,
+    "w": 1,
+    "h": 1,
+    "row": 4,
+    "col": 10
+   },
+   {
+    "label": "/",
+    "x": 11.25,
+    "y": 4.25,
+    "w": 1,
+    "h": 1,
+    "row": 4,
+    "col": 11
+   },
+   {
+    "label": "Shift",
+    "x": 12.25,
+    "y": 4.25,
+    "w": 1.75,
+    "h": 1,
+    "row": 4,
+    "col": 12
+   },
+   {
+    "label": "Up",
+    "x": 14.25,
+    "y": 4.5,
+    "w": 1,
+    "h": 1,
+    "row": 4,
+    "col": 14
+   },
+   {
+    "label": "Ctrl",
+    "x": 0,
+    "y": 5.25,
+    "w": 1.25,
+    "h": 1,
+    "row": 5,
+    "col": 0
+   },
+   {
+    "label": "Opt",
+    "x": 1.25,
+    "y": 5.25,
+    "w": 1.25,
+    "h": 1,
+    "row": 5,
+    "col": 1
+   },
+   {
+    "label": "Cmd",
+    "x": 2.5,
+    "y": 5.25,
+    "w": 1.25,
+    "h": 1,
+    "row": 5,
+    "col": 2
+   },
+   {
+    "label": "Space",
+    "x": 3.75,
+    "y": 5.25,
+    "w": 6.25,
+    "h": 1,
+    "row": 5,
+    "col": 6
+   },
+   {
+    "label": "Cmd",
+    "x": 10,
+    "y": 5.25,
+    "w": 1,
+    "h": 1,
+    "row": 5,
+    "col": 10
+   },
+   {
+    "label": "Fn (MO)",
+    "x": 11,
+    "y": 5.25,
+    "w": 1,
+    "h": 1,
+    "row": 5,
+    "col": 11
+   },
+   {
+    "label": "Ctrl",
+    "x": 12,
+    "y": 5.25,
+    "w": 1,
+    "h": 1,
+    "row": 5,
+    "col": 12
+   },
+   {
+    "label": "Left",
+    "x": 13.25,
+    "y": 5.5,
+    "w": 1,
+    "h": 1,
+    "row": 5,
+    "col": 13
+   },
+   {
+    "label": "Down",
+    "x": 14.25,
+    "y": 5.5,
+    "w": 1,
+    "h": 1,
+    "row": 5,
+    "col": 14
+   },
+   {
+    "label": "Right",
+    "x": 15.25,
+    "y": 5.5,
+    "w": 1,
+    "h": 1,
+    "row": 5,
+    "col": 15
+   }
+  ],
+  "encoders": [
+   {
+    "index": 0,
+    "note": "Single rotary encoder (knob). pin_a=B15, pin_b=B14, ENCODER_DEFAULT_POS=0x3. encoder_map enabled. Default action per layer: MAC_BASE/WIN_BASE = ENCODER_CCW_CW(KC_VOLD, KC_VOLU) i.e. volume down/up; MAC_FN/WIN_FN = ENCODER_CCW_CW(RGB_VAD, RGB_VAI) i.e. RGB brightness down/up. The knob's PUSH (press) is a separate matrix switch at row0,col15 (KC_MUTE on base, RGB_TOG on Fn), already included as a physical key above."
+   }
+  ],
+  "notes": "SOURCES: physical layout + matrix from /Users/vfi/keychron-qmk/keyboards/keychron/v1_max/ansi_encoder/info.json (only one layout macro: LAYOUT_ansi_82, 82 keys). Matrix dims from /Users/vfi/keychron-qmk/keyboards/keychron/v1_max/info.json matrix_pins: rows=[C12,D2,B3,B4,B5,B6] -> 6 rows; cols=[C6,C7,C8,A14,A15,C10,C11,C13,C14,C15,C0,C1,C2,C3,A0,A1] -> 16 cols. diode_direction=ROW2COL.\n\nLAYER COUNT: DYNAMIC_KEYMAP_LAYER_COUNT is NOT defined anywhere in v1_max (grep returned nothing in config.h/rules.mk), so QMK's compile-time default of 4 applies. This matches the default keymap.c which defines exactly 4 layers: MAC_BASE, MAC_FN, WIN_BASE, WIN_FN. So layer_count=4 with high confidence.\n\nHOW LAYOUT ENCODES MATRIX: each entry in layouts.LAYOUT_ansi_82.layout is one physical key with explicit \"matrix\":[row,col]. x/y/w/h are key units (1u default; w/h omitted means 1). The layout array order is positional and maps 1:1 (left-to-right, top-to-bottom) onto the keycodes in each LAYOUT_ansi_82(...) call in keymap.c. NOTE: matrix columns are NON-CONTIGUOUS per row because the LAYOUT macro skips unused electrical positions \u2014 e.g. row0 jumps col13 -> col15 (col14 unused on row0); row1/row2 jump col13 -> col15; row3 skips col12 (Enter occupies matrix col13 but spans the col12 cap position) and jumps to col15; row4 skips col1 (2.25u left Shift occupies col0, next key is col2) and uses col14 for the Up arrow (no col13/col15 in row4); row5 uses cols 0,1,2 then jumps to col6 (6.25u Space) then 10,11,12,13,14,15. The encoder knob press is the switch at matrix[0,15].\n\nLABELS: legends are derived from the MAC_BASE (default/first) layer of keymap.c since info.json carries no legend text. Modifier/media keys are given human-readable caps (Cmd/Opt for KC_LCMMD/KC_LOPTN, etc.). The two leftmost-column row0 keys after Esc are macOS BrtDn/BrtUp; MissionCtrl=KC_MCTRL, Launchpad=KC_LNPAD. RGB_VAD/RGB_VAI kept as keycode names (RGB value down/up). matrix[0,15] cap = KC_MUTE on base layer (the encoder press), labeled 'Mute (knob)'. The 'Fn (MO)' key at row5,col11 is MO(MAC_FN). Total = 82 keys, matching LAYOUT_ansi_82.\n\nCAVEAT on Enter (row3,col13): in info.json it sits at x=12.75 spanning w=2.25, so the cap visually covers the col11(') -> col13 region; there is no separate col12 entry in row3. Backspace (row1,col13) w=2 at x=13. These wide keys are single matrix switches."
+ },
+ "keycodes": {
+  "layer_keycode_encoding": "All layer keycodes are built by OR-ing (here equivalent to adding) a base range value with the layer number. Values are 16-bit; cite keycodes.h enum qk_keycode_ranges (lines 41-54). Layer number must fit in the range width (most are 5 bits, 0..31; LT is limited to 4 bits, 0..15).\n\nSIMPLE LAYER KEYS \u2014 base | layer:\n- MO(n)  Momentary on while held:    base QK_MOMENTARY      = 0x5220 -> value = 0x5220 + n   (n 0..31, max range 0x523F)\n- TG(n)  Toggle layer on/off:        base QK_TOGGLE_LAYER   = 0x5260 -> value = 0x5260 + n   (n 0..31, max 0x527F)\n- TO(n)  Activate layer (turn off others in its range): base QK_TO = 0x5200 -> value = 0x5200 + n (n 0..31, max 0x521F)\n- OSL(n) One-shot layer (next keypress): base QK_ONE_SHOT_LAYER = 0x5280 -> value = 0x5280 + n (n 0..31, max 0x529F)\n- DF(n)  Set default layer:          base QK_DEF_LAYER      = 0x5240 -> value = 0x5240 + n   (n 0..31, max 0x525F)\n- TT(n)  Layer-tap-toggle:           base QK_LAYER_TAP_TOGGLE = 0x52C0 -> value = 0x52C0 + n (n 0..31, max 0x52DF)\n\nSo to build these for layers 0..N: value = base + layer. Hex: e.g. MO(1)=0x5221, TG(2)=0x5262, TO(0)=0x5200, OSL(3)=0x5283.\n\nCOMPOSITE KEYS (layer + tap keycode), bit-packed, NOT a simple add:\n- LT(layer, kc)  Layer-tap: hold = momentary layer, tap = send kc.\n    base QK_LAYER_TAP = 0x4000 (range to 0x4FFF). Encoding: value = 0x4000 | ((layer & 0x0F) << 8) | (kc & 0xFF).\n    layer is only 4 bits here (0..15); kc is a BASIC keycode (its low byte, e.g. KC_SPACE=0x2C). Example: LT(1, KC_SPACE) = 0x4000 | (1<<8) | 0x2C = 0x412C.\n- LM(layer, mod)  Layer-mod (momentary layer + held mods): base QK_LAYER_MOD = 0x5000 (range to 0x51FF). Encoding: value = 0x5000 | ((layer & 0x0F) << 5) | (mod & 0x1F), where mod is the 5-bit MOD_MASK bitfield (bit0=LCTL,1=LSFT,2=LALT,3=LGUI; bit4 set = right-hand).\n\nMODIFIER-WRAPPED KEYS (not layer, but same bit-pack idea, for completeness):\n- Modded basic keycode (e.g. S(kc), LCTL(kc)): base QK_MODS = 0x0100. value = 0x0100 | ((mod & 0x1F) << 8) | (kc & 0xFF). e.g. S(KC_1)=0x0100|(0x02<<8)|0x1E=0x021E ('!'). Right-hand mods set bit4 (0x10) of the mod field.\n- Mod-tap MT(mod, kc): base QK_MOD_TAP = 0x2000. value = 0x2000 | ((mod & 0x1F) << 8) | (kc & 0xFF).\n\nAll bases verified against /Users/vfi/keychron-qmk/quantum/keycodes.h lines 33-54.",
+  "keycodes": [
+   {
+    "value": "0x0000",
+    "name": "KC_NO",
+    "label": "None",
+    "group": "Special"
+   },
+   {
+    "value": "0x0001",
+    "name": "KC_TRNS",
+    "label": "Transparent",
+    "group": "Special"
+   },
+   {
+    "value": "0x0004",
+    "name": "KC_A",
+    "label": "A",
+    "group": "Letters"
+   },
+   {
+    "value": "0x0005",
+    "name": "KC_B",
+    "label": "B",
+    "group": "Letters"
+   },
+   {
+    "value": "0x0006",
+    "name": "KC_C",
+    "label": "C",
+    "group": "Letters"
+   },
+   {
+    "value": "0x0007",
+    "name": "KC_D",
+    "label": "D",
+    "group": "Letters"
+   },
+   {
+    "value": "0x0008",
+    "name": "KC_E",
+    "label": "E",
+    "group": "Letters"
+   },
+   {
+    "value": "0x0009",
+    "name": "KC_F",
+    "label": "F",
+    "group": "Letters"
+   },
+   {
+    "value": "0x000A",
+    "name": "KC_G",
+    "label": "G",
+    "group": "Letters"
+   },
+   {
+    "value": "0x000B",
+    "name": "KC_H",
+    "label": "H",
+    "group": "Letters"
+   },
+   {
+    "value": "0x000C",
+    "name": "KC_I",
+    "label": "I",
+    "group": "Letters"
+   },
+   {
+    "value": "0x000D",
+    "name": "KC_J",
+    "label": "J",
+    "group": "Letters"
+   },
+   {
+    "value": "0x000E",
+    "name": "KC_K",
+    "label": "K",
+    "group": "Letters"
+   },
+   {
+    "value": "0x000F",
+    "name": "KC_L",
+    "label": "L",
+    "group": "Letters"
+   },
+   {
+    "value": "0x0010",
+    "name": "KC_M",
+    "label": "M",
+    "group": "Letters"
+   },
+   {
+    "value": "0x0011",
+    "name": "KC_N",
+    "label": "N",
+    "group": "Letters"
+   },
+   {
+    "value": "0x0012",
+    "name": "KC_O",
+    "label": "O",
+    "group": "Letters"
+   },
+   {
+    "value": "0x0013",
+    "name": "KC_P",
+    "label": "P",
+    "group": "Letters"
+   },
+   {
+    "value": "0x0014",
+    "name": "KC_Q",
+    "label": "Q",
+    "group": "Letters"
+   },
+   {
+    "value": "0x0015",
+    "name": "KC_R",
+    "label": "R",
+    "group": "Letters"
+   },
+   {
+    "value": "0x0016",
+    "name": "KC_S",
+    "label": "S",
+    "group": "Letters"
+   },
+   {
+    "value": "0x0017",
+    "name": "KC_T",
+    "label": "T",
+    "group": "Letters"
+   },
+   {
+    "value": "0x0018",
+    "name": "KC_U",
+    "label": "U",
+    "group": "Letters"
+   },
+   {
+    "value": "0x0019",
+    "name": "KC_V",
+    "label": "V",
+    "group": "Letters"
+   },
+   {
+    "value": "0x001A",
+    "name": "KC_W",
+    "label": "W",
+    "group": "Letters"
+   },
+   {
+    "value": "0x001B",
+    "name": "KC_X",
+    "label": "X",
+    "group": "Letters"
+   },
+   {
+    "value": "0x001C",
+    "name": "KC_Y",
+    "label": "Y",
+    "group": "Letters"
+   },
+   {
+    "value": "0x001D",
+    "name": "KC_Z",
+    "label": "Z",
+    "group": "Letters"
+   },
+   {
+    "value": "0x001E",
+    "name": "KC_1",
+    "label": "1",
+    "group": "Numbers"
+   },
+   {
+    "value": "0x001F",
+    "name": "KC_2",
+    "label": "2",
+    "group": "Numbers"
+   },
+   {
+    "value": "0x0020",
+    "name": "KC_3",
+    "label": "3",
+    "group": "Numbers"
+   },
+   {
+    "value": "0x0021",
+    "name": "KC_4",
+    "label": "4",
+    "group": "Numbers"
+   },
+   {
+    "value": "0x0022",
+    "name": "KC_5",
+    "label": "5",
+    "group": "Numbers"
+   },
+   {
+    "value": "0x0023",
+    "name": "KC_6",
+    "label": "6",
+    "group": "Numbers"
+   },
+   {
+    "value": "0x0024",
+    "name": "KC_7",
+    "label": "7",
+    "group": "Numbers"
+   },
+   {
+    "value": "0x0025",
+    "name": "KC_8",
+    "label": "8",
+    "group": "Numbers"
+   },
+   {
+    "value": "0x0026",
+    "name": "KC_9",
+    "label": "9",
+    "group": "Numbers"
+   },
+   {
+    "value": "0x0027",
+    "name": "KC_0",
+    "label": "0",
+    "group": "Numbers"
+   },
+   {
+    "value": "0x0028",
+    "name": "KC_ENTER",
+    "label": "Enter",
+    "group": "Editing"
+   },
+   {
+    "value": "0x0029",
+    "name": "KC_ESCAPE",
+    "label": "Esc",
+    "group": "Editing"
+   },
+   {
+    "value": "0x002A",
+    "name": "KC_BACKSPACE",
+    "label": "Backspace",
+    "group": "Editing"
+   },
+   {
+    "value": "0x002B",
+    "name": "KC_TAB",
+    "label": "Tab",
+    "group": "Editing"
+   },
+   {
+    "value": "0x002C",
+    "name": "KC_SPACE",
+    "label": "Space",
+    "group": "Editing"
+   },
+   {
+    "value": "0x0039",
+    "name": "KC_CAPS_LOCK",
+    "label": "Caps Lock",
+    "group": "Editing"
+   },
+   {
+    "value": "0x002D",
+    "name": "KC_MINUS",
+    "label": "- _",
+    "group": "Punctuation"
+   },
+   {
+    "value": "0x002E",
+    "name": "KC_EQUAL",
+    "label": "= +",
+    "group": "Punctuation"
+   },
+   {
+    "value": "0x002F",
+    "name": "KC_LEFT_BRACKET",
+    "label": "[ {",
+    "group": "Punctuation"
+   },
+   {
+    "value": "0x0030",
+    "name": "KC_RIGHT_BRACKET",
+    "label": "] }",
+    "group": "Punctuation"
+   },
+   {
+    "value": "0x0031",
+    "name": "KC_BACKSLASH",
+    "label": "\\ |",
+    "group": "Punctuation"
+   },
+   {
+    "value": "0x0033",
+    "name": "KC_SEMICOLON",
+    "label": "; :",
+    "group": "Punctuation"
+   },
+   {
+    "value": "0x0034",
+    "name": "KC_QUOTE",
+    "label": "' \"",
+    "group": "Punctuation"
+   },
+   {
+    "value": "0x0035",
+    "name": "KC_GRAVE",
+    "label": "` ~",
+    "group": "Punctuation"
+   },
+   {
+    "value": "0x0036",
+    "name": "KC_COMMA",
+    "label": ", <",
+    "group": "Punctuation"
+   },
+   {
+    "value": "0x0037",
+    "name": "KC_DOT",
+    "label": ". >",
+    "group": "Punctuation"
+   },
+   {
+    "value": "0x0038",
+    "name": "KC_SLASH",
+    "label": "/ ?",
+    "group": "Punctuation"
+   },
+   {
+    "value": "0x003A",
+    "name": "KC_F1",
+    "label": "F1",
+    "group": "Fkeys"
+   },
+   {
+    "value": "0x003B",
+    "name": "KC_F2",
+    "label": "F2",
+    "group": "Fkeys"
+   },
+   {
+    "value": "0x003C",
+    "name": "KC_F3",
+    "label": "F3",
+    "group": "Fkeys"
+   },
+   {
+    "value": "0x003D",
+    "name": "KC_F4",
+    "label": "F4",
+    "group": "Fkeys"
+   },
+   {
+    "value": "0x003E",
+    "name": "KC_F5",
+    "label": "F5",
+    "group": "Fkeys"
+   },
+   {
+    "value": "0x003F",
+    "name": "KC_F6",
+    "label": "F6",
+    "group": "Fkeys"
+   },
+   {
+    "value": "0x0040",
+    "name": "KC_F7",
+    "label": "F7",
+    "group": "Fkeys"
+   },
+   {
+    "value": "0x0041",
+    "name": "KC_F8",
+    "label": "F8",
+    "group": "Fkeys"
+   },
+   {
+    "value": "0x0042",
+    "name": "KC_F9",
+    "label": "F9",
+    "group": "Fkeys"
+   },
+   {
+    "value": "0x0043",
+    "name": "KC_F10",
+    "label": "F10",
+    "group": "Fkeys"
+   },
+   {
+    "value": "0x0044",
+    "name": "KC_F11",
+    "label": "F11",
+    "group": "Fkeys"
+   },
+   {
+    "value": "0x0045",
+    "name": "KC_F12",
+    "label": "F12",
+    "group": "Fkeys"
+   },
+   {
+    "value": "0x0068",
+    "name": "KC_F13",
+    "label": "F13",
+    "group": "Fkeys"
+   },
+   {
+    "value": "0x0069",
+    "name": "KC_F14",
+    "label": "F14",
+    "group": "Fkeys"
+   },
+   {
+    "value": "0x006A",
+    "name": "KC_F15",
+    "label": "F15",
+    "group": "Fkeys"
+   },
+   {
+    "value": "0x006B",
+    "name": "KC_F16",
+    "label": "F16",
+    "group": "Fkeys"
+   },
+   {
+    "value": "0x006C",
+    "name": "KC_F17",
+    "label": "F17",
+    "group": "Fkeys"
+   },
+   {
+    "value": "0x006D",
+    "name": "KC_F18",
+    "label": "F18",
+    "group": "Fkeys"
+   },
+   {
+    "value": "0x006E",
+    "name": "KC_F19",
+    "label": "F19",
+    "group": "Fkeys"
+   },
+   {
+    "value": "0x006F",
+    "name": "KC_F20",
+    "label": "F20",
+    "group": "Fkeys"
+   },
+   {
+    "value": "0x0070",
+    "name": "KC_F21",
+    "label": "F21",
+    "group": "Fkeys"
+   },
+   {
+    "value": "0x0071",
+    "name": "KC_F22",
+    "label": "F22",
+    "group": "Fkeys"
+   },
+   {
+    "value": "0x0072",
+    "name": "KC_F23",
+    "label": "F23",
+    "group": "Fkeys"
+   },
+   {
+    "value": "0x0073",
+    "name": "KC_F24",
+    "label": "F24",
+    "group": "Fkeys"
+   },
+   {
+    "value": "0x00E0",
+    "name": "KC_LCTL",
+    "label": "Left Ctrl",
+    "group": "Modifiers"
+   },
+   {
+    "value": "0x00E1",
+    "name": "KC_LSFT",
+    "label": "Left Shift",
+    "group": "Modifiers"
+   },
+   {
+    "value": "0x00E2",
+    "name": "KC_LALT",
+    "label": "Left Alt/Opt",
+    "group": "Modifiers"
+   },
+   {
+    "value": "0x00E3",
+    "name": "KC_LGUI",
+    "label": "Left GUI/Cmd/Win",
+    "group": "Modifiers"
+   },
+   {
+    "value": "0x00E4",
+    "name": "KC_RCTL",
+    "label": "Right Ctrl",
+    "group": "Modifiers"
+   },
+   {
+    "value": "0x00E5",
+    "name": "KC_RSFT",
+    "label": "Right Shift",
+    "group": "Modifiers"
+   },
+   {
+    "value": "0x00E6",
+    "name": "KC_RALT",
+    "label": "Right Alt/AltGr",
+    "group": "Modifiers"
+   },
+   {
+    "value": "0x00E7",
+    "name": "KC_RGUI",
+    "label": "Right GUI/Cmd/Win",
+    "group": "Modifiers"
+   },
+   {
+    "value": "0x0065",
+    "name": "KC_APPLICATION",
+    "label": "Menu (App)",
+    "group": "Modifiers"
+   },
+   {
+    "value": "0x004F",
+    "name": "KC_RIGHT",
+    "label": "Right Arrow",
+    "group": "Nav"
+   },
+   {
+    "value": "0x0050",
+    "name": "KC_LEFT",
+    "label": "Left Arrow",
+    "group": "Nav"
+   },
+   {
+    "value": "0x0051",
+    "name": "KC_DOWN",
+    "label": "Down Arrow",
+    "group": "Nav"
+   },
+   {
+    "value": "0x0052",
+    "name": "KC_UP",
+    "label": "Up Arrow",
+    "group": "Nav"
+   },
+   {
+    "value": "0x004A",
+    "name": "KC_HOME",
+    "label": "Home",
+    "group": "Nav"
+   },
+   {
+    "value": "0x004D",
+    "name": "KC_END",
+    "label": "End",
+    "group": "Nav"
+   },
+   {
+    "value": "0x004B",
+    "name": "KC_PAGE_UP",
+    "label": "Page Up",
+    "group": "Nav"
+   },
+   {
+    "value": "0x004E",
+    "name": "KC_PAGE_DOWN",
+    "label": "Page Down",
+    "group": "Nav"
+   },
+   {
+    "value": "0x0049",
+    "name": "KC_INSERT",
+    "label": "Insert",
+    "group": "Nav"
+   },
+   {
+    "value": "0x004C",
+    "name": "KC_DELETE",
+    "label": "Delete (Forward)",
+    "group": "Nav"
+   },
+   {
+    "value": "0x0046",
+    "name": "KC_PRINT_SCREEN",
+    "label": "Print Screen",
+    "group": "System"
+   },
+   {
+    "value": "0x0047",
+    "name": "KC_SCROLL_LOCK",
+    "label": "Scroll Lock",
+    "group": "System"
+   },
+   {
+    "value": "0x0048",
+    "name": "KC_PAUSE",
+    "label": "Pause/Break",
+    "group": "System"
+   },
+   {
+    "value": "0x0053",
+    "name": "KC_NUM_LOCK",
+    "label": "Num Lock",
+    "group": "System"
+   },
+   {
+    "value": "0x00A5",
+    "name": "KC_SYSTEM_POWER",
+    "label": "System Power",
+    "group": "System"
+   },
+   {
+    "value": "0x00A6",
+    "name": "KC_SYSTEM_SLEEP",
+    "label": "System Sleep",
+    "group": "System"
+   },
+   {
+    "value": "0x00A7",
+    "name": "KC_SYSTEM_WAKE",
+    "label": "System Wake",
+    "group": "System"
+   },
+   {
+    "value": "0x0054",
+    "name": "KC_KP_SLASH",
+    "label": "Numpad /",
+    "group": "Numbers"
+   },
+   {
+    "value": "0x0055",
+    "name": "KC_KP_ASTERISK",
+    "label": "Numpad *",
+    "group": "Numbers"
+   },
+   {
+    "value": "0x0056",
+    "name": "KC_KP_MINUS",
+    "label": "Numpad -",
+    "group": "Numbers"
+   },
+   {
+    "value": "0x0057",
+    "name": "KC_KP_PLUS",
+    "label": "Numpad +",
+    "group": "Numbers"
+   },
+   {
+    "value": "0x0058",
+    "name": "KC_KP_ENTER",
+    "label": "Numpad Enter",
+    "group": "Numbers"
+   },
+   {
+    "value": "0x0059",
+    "name": "KC_KP_1",
+    "label": "Numpad 1",
+    "group": "Numbers"
+   },
+   {
+    "value": "0x005A",
+    "name": "KC_KP_2",
+    "label": "Numpad 2",
+    "group": "Numbers"
+   },
+   {
+    "value": "0x005B",
+    "name": "KC_KP_3",
+    "label": "Numpad 3",
+    "group": "Numbers"
+   },
+   {
+    "value": "0x005C",
+    "name": "KC_KP_4",
+    "label": "Numpad 4",
+    "group": "Numbers"
+   },
+   {
+    "value": "0x005D",
+    "name": "KC_KP_5",
+    "label": "Numpad 5",
+    "group": "Numbers"
+   },
+   {
+    "value": "0x005E",
+    "name": "KC_KP_6",
+    "label": "Numpad 6",
+    "group": "Numbers"
+   },
+   {
+    "value": "0x005F",
+    "name": "KC_KP_7",
+    "label": "Numpad 7",
+    "group": "Numbers"
+   },
+   {
+    "value": "0x0060",
+    "name": "KC_KP_8",
+    "label": "Numpad 8",
+    "group": "Numbers"
+   },
+   {
+    "value": "0x0061",
+    "name": "KC_KP_9",
+    "label": "Numpad 9",
+    "group": "Numbers"
+   },
+   {
+    "value": "0x0062",
+    "name": "KC_KP_0",
+    "label": "Numpad 0",
+    "group": "Numbers"
+   },
+   {
+    "value": "0x0063",
+    "name": "KC_KP_DOT",
+    "label": "Numpad .",
+    "group": "Numbers"
+   },
+   {
+    "value": "0x0067",
+    "name": "KC_KP_EQUAL",
+    "label": "Numpad =",
+    "group": "Numbers"
+   },
+   {
+    "value": "0x00A8",
+    "name": "KC_MUTE",
+    "label": "Mute",
+    "group": "Media"
+   },
+   {
+    "value": "0x00A9",
+    "name": "KC_VOLU",
+    "label": "Volume Up",
+    "group": "Media"
+   },
+   {
+    "value": "0x00AA",
+    "name": "KC_VOLD",
+    "label": "Volume Down",
+    "group": "Media"
+   },
+   {
+    "value": "0x00AE",
+    "name": "KC_MPLY",
+    "label": "Play/Pause",
+    "group": "Media"
+   },
+   {
+    "value": "0x00AB",
+    "name": "KC_MNXT",
+    "label": "Next Track",
+    "group": "Media"
+   },
+   {
+    "value": "0x00AC",
+    "name": "KC_MPRV",
+    "label": "Prev Track",
+    "group": "Media"
+   },
+   {
+    "value": "0x00AD",
+    "name": "KC_MSTP",
+    "label": "Stop Track",
+    "group": "Media"
+   },
+   {
+    "value": "0x00AF",
+    "name": "KC_MSEL",
+    "label": "Media Select",
+    "group": "Media"
+   },
+   {
+    "value": "0x00B0",
+    "name": "KC_MEDIA_EJECT",
+    "label": "Eject",
+    "group": "Media"
+   },
+   {
+    "value": "0x00BB",
+    "name": "KC_MEDIA_FAST_FORWARD",
+    "label": "Fast Forward",
+    "group": "Media"
+   },
+   {
+    "value": "0x00BC",
+    "name": "KC_MEDIA_REWIND",
+    "label": "Rewind",
+    "group": "Media"
+   },
+   {
+    "value": "0x00BD",
+    "name": "KC_BRIGHTNESS_UP",
+    "label": "Brightness Up",
+    "group": "Media"
+   },
+   {
+    "value": "0x00BE",
+    "name": "KC_BRIGHTNESS_DOWN",
+    "label": "Brightness Down",
+    "group": "Media"
+   },
+   {
+    "value": "0x00C1",
+    "name": "KC_MISSION_CONTROL",
+    "label": "Mission Control",
+    "group": "Media"
+   },
+   {
+    "value": "0x00C2",
+    "name": "KC_LAUNCHPAD",
+    "label": "Launchpad",
+    "group": "Media"
+   },
+   {
+    "value": "0x00B2",
+    "name": "KC_CALCULATOR",
+    "label": "Calculator",
+    "group": "Media"
+   },
+   {
+    "value": "0x00B1",
+    "name": "KC_MAIL",
+    "label": "Mail",
+    "group": "Media"
+   },
+   {
+    "value": "0x00B3",
+    "name": "KC_MY_COMPUTER",
+    "label": "My Computer",
+    "group": "Media"
+   },
+   {
+    "value": "0x00B5",
+    "name": "KC_WWW_HOME",
+    "label": "Browser Home",
+    "group": "Media"
+   },
+   {
+    "value": "0x00B6",
+    "name": "KC_WWW_BACK",
+    "label": "Browser Back",
+    "group": "Media"
+   },
+   {
+    "value": "0x00B7",
+    "name": "KC_WWW_FORWARD",
+    "label": "Browser Forward",
+    "group": "Media"
+   },
+   {
+    "value": "0x00B9",
+    "name": "KC_WWW_REFRESH",
+    "label": "Browser Refresh",
+    "group": "Media"
+   },
+   {
+    "value": "0x00B4",
+    "name": "KC_WWW_SEARCH",
+    "label": "Browser Search",
+    "group": "Media"
+   },
+   {
+    "value": "0x007C",
+    "name": "KC_COPY",
+    "label": "Copy",
+    "group": "Editing"
+   },
+   {
+    "value": "0x007D",
+    "name": "KC_PASTE",
+    "label": "Paste",
+    "group": "Editing"
+   },
+   {
+    "value": "0x007B",
+    "name": "KC_CUT",
+    "label": "Cut",
+    "group": "Editing"
+   },
+   {
+    "value": "0x007A",
+    "name": "KC_UNDO",
+    "label": "Undo",
+    "group": "Editing"
+   },
+   {
+    "value": "0x0079",
+    "name": "KC_AGAIN",
+    "label": "Redo/Again",
+    "group": "Editing"
+   },
+   {
+    "value": "0x007E",
+    "name": "KC_FIND",
+    "label": "Find",
+    "group": "Editing"
+   },
+   {
+    "value": "0x00CD",
+    "name": "KC_MS_UP",
+    "label": "Mouse Up",
+    "group": "Mouse"
+   },
+   {
+    "value": "0x00CE",
+    "name": "KC_MS_DOWN",
+    "label": "Mouse Down",
+    "group": "Mouse"
+   },
+   {
+    "value": "0x00CF",
+    "name": "KC_MS_LEFT",
+    "label": "Mouse Left",
+    "group": "Mouse"
+   },
+   {
+    "value": "0x00D0",
+    "name": "KC_MS_RIGHT",
+    "label": "Mouse Right",
+    "group": "Mouse"
+   },
+   {
+    "value": "0x00D1",
+    "name": "KC_MS_BTN1",
+    "label": "Mouse Button 1 (L)",
+    "group": "Mouse"
+   },
+   {
+    "value": "0x00D2",
+    "name": "KC_MS_BTN2",
+    "label": "Mouse Button 2 (R)",
+    "group": "Mouse"
+   },
+   {
+    "value": "0x00D3",
+    "name": "KC_MS_BTN3",
+    "label": "Mouse Button 3 (M)",
+    "group": "Mouse"
+   },
+   {
+    "value": "0x00D4",
+    "name": "KC_MS_BTN4",
+    "label": "Mouse Button 4",
+    "group": "Mouse"
+   },
+   {
+    "value": "0x00D5",
+    "name": "KC_MS_BTN5",
+    "label": "Mouse Button 5",
+    "group": "Mouse"
+   },
+   {
+    "value": "0x00D9",
+    "name": "KC_MS_WH_UP",
+    "label": "Wheel Up",
+    "group": "Mouse"
+   },
+   {
+    "value": "0x00DA",
+    "name": "KC_MS_WH_DOWN",
+    "label": "Wheel Down",
+    "group": "Mouse"
+   },
+   {
+    "value": "0x00DB",
+    "name": "KC_MS_WH_LEFT",
+    "label": "Wheel Left",
+    "group": "Mouse"
+   },
+   {
+    "value": "0x00DC",
+    "name": "KC_MS_WH_RIGHT",
+    "label": "Wheel Right",
+    "group": "Mouse"
+   },
+   {
+    "value": "0x00DD",
+    "name": "KC_MS_ACCEL0",
+    "label": "Mouse Accel 0",
+    "group": "Mouse"
+   },
+   {
+    "value": "0x00DE",
+    "name": "KC_MS_ACCEL1",
+    "label": "Mouse Accel 1",
+    "group": "Mouse"
+   },
+   {
+    "value": "0x00DF",
+    "name": "KC_MS_ACCEL2",
+    "label": "Mouse Accel 2",
+    "group": "Mouse"
+   },
+   {
+    "value": "0x7820",
+    "name": "RGB_TOG",
+    "label": "RGB Toggle",
+    "group": "RGB"
+   },
+   {
+    "value": "0x7821",
+    "name": "RGB_MOD",
+    "label": "RGB Mode Next",
+    "group": "RGB"
+   },
+   {
+    "value": "0x7822",
+    "name": "RGB_RMOD",
+    "label": "RGB Mode Prev",
+    "group": "RGB"
+   },
+   {
+    "value": "0x7823",
+    "name": "RGB_HUI",
+    "label": "RGB Hue +",
+    "group": "RGB"
+   },
+   {
+    "value": "0x7824",
+    "name": "RGB_HUD",
+    "label": "RGB Hue -",
+    "group": "RGB"
+   },
+   {
+    "value": "0x7825",
+    "name": "RGB_SAI",
+    "label": "RGB Sat +",
+    "group": "RGB"
+   },
+   {
+    "value": "0x7826",
+    "name": "RGB_SAD",
+    "label": "RGB Sat -",
+    "group": "RGB"
+   },
+   {
+    "value": "0x7827",
+    "name": "RGB_VAI",
+    "label": "RGB Brightness +",
+    "group": "RGB"
+   },
+   {
+    "value": "0x7828",
+    "name": "RGB_VAD",
+    "label": "RGB Brightness -",
+    "group": "RGB"
+   },
+   {
+    "value": "0x7829",
+    "name": "RGB_SPI",
+    "label": "RGB Speed +",
+    "group": "RGB"
+   },
+   {
+    "value": "0x782A",
+    "name": "RGB_SPD",
+    "label": "RGB Speed -",
+    "group": "RGB"
+   },
+   {
+    "value": "0x7C00",
+    "name": "QK_BOOT",
+    "label": "Reset / Bootloader",
+    "group": "System"
+   },
+   {
+    "value": "0x7C01",
+    "name": "QK_REBOOT",
+    "label": "Reboot",
+    "group": "System"
+   },
+   {
+    "value": "0x7C03",
+    "name": "QK_CLEAR_EEPROM",
+    "label": "Clear EEPROM",
+    "group": "System"
+   },
+   {
+    "value": "0x5200",
+    "name": "TO",
+    "label": "TO(layer) base \u2014 see encoding",
+    "group": "Layer"
+   },
+   {
+    "value": "0x5220",
+    "name": "MO",
+    "label": "MO(layer) base \u2014 see encoding",
+    "group": "Layer"
+   },
+   {
+    "value": "0x5240",
+    "name": "DF",
+    "label": "DF(layer) base \u2014 see encoding",
+    "group": "Layer"
+   },
+   {
+    "value": "0x5260",
+    "name": "TG",
+    "label": "TG(layer) base \u2014 see encoding",
+    "group": "Layer"
+   },
+   {
+    "value": "0x5280",
+    "name": "OSL",
+    "label": "OSL(layer) base \u2014 see encoding",
+    "group": "Layer"
+   },
+   {
+    "value": "0x52C0",
+    "name": "TT",
+    "label": "TT(layer) base \u2014 see encoding",
+    "group": "Layer"
+   },
+   {
+    "value": "0x4000",
+    "name": "LT",
+    "label": "LT(layer,kc) base \u2014 see encoding",
+    "group": "Layer"
+   }
+  ]
+ },
+ "lighting": {
+  "via_channel": "id_qmk_rgb_matrix_channel = 3 (defined in quantum/via.h:111, enum via_channel_id). Routed in quantum/via.c:243-248 \u2192 via_qmk_rgb_matrix_command(), which is implemented at quantum/via.c:637.",
+  "values": [
+   {
+    "name": "brightness",
+    "id": "id_qmk_rgb_matrix_brightness = 1",
+    "kind": "range",
+    "min": 0,
+    "max": 255,
+    "notes": "via.h:129; value_id=1. GET (via.c:668-671): value_data[0] = rgb_matrix_get_val()*255/RGB_MATRIX_MAXIMUM_BRIGHTNESS. SET (via.c:694-696): rgb_matrix_sethsv_noeeprom(hue,sat, scale8(value_data[0], RGB_MATRIX_MAXIMUM_BRIGHTNESS)). On V1 Max RGB_MATRIX_MAXIMUM_BRIGHTNESS is not overridden, so it = UINT8_MAX = 255 (quantum/rgb_matrix/rgb_matrix.h:56) \u2192 the scale is effectively 1:1, full 0-255 range. Single data byte d0."
+   },
+   {
+    "name": "effect",
+    "id": "id_qmk_rgb_matrix_effect = 2",
+    "kind": "enum",
+    "min": 0,
+    "max": 22,
+    "notes": "via.h:130; value_id=2. Single data byte d0 = effect index. SET (via.c:698-705): d0==0 \u2192 rgb_matrix_disable_noeeprom(); else rgb_matrix_enable_noeeprom() + rgb_matrix_mode_noeeprom(d0). GET (via.c:672-674): returns rgb_matrix_is_enabled() ? rgb_matrix_get_mode() : 0. NOTE: index 0 doubles as the enable/disable toggle (there is NO separate 'enable' value id on this channel). Range 0-22 per the VIA dropdown options in via_json/v1_max_ansi_encoder.json:23-47 (None=0 .. Solid Splash=22)."
+   },
+   {
+    "name": "speed",
+    "id": "id_qmk_rgb_matrix_effect_speed = 3",
+    "kind": "range",
+    "min": 0,
+    "max": 255,
+    "notes": "via.h:131; value_id=3. Single data byte d0. GET (via.c:676-678): rgb_matrix_get_speed(). SET (via.c:707-709): rgb_matrix_set_speed_noeeprom(d0). VIA shows this only when effect>1 (via_json line 50)."
+   },
+   {
+    "name": "color",
+    "id": "id_qmk_rgb_matrix_color = 4",
+    "kind": "color",
+    "min": 0,
+    "max": 255,
+    "notes": "via.h:132; value_id=4. TWO data bytes: d0=hue, d1=sat (each 0-255). GET (via.c:680-683): value_data[0]=rgb_matrix_get_hue(), value_data[1]=rgb_matrix_get_sat(). SET (via.c:711-713): rgb_matrix_sethsv_noeeprom(d0_hue, d1_sat, rgb_matrix_get_val()). Brightness(val) is preserved from current state; only hue+sat are set here. VIA shows color only for color-capable effects (via_json line 57)."
+   }
+  ],
+  "effects": [
+   "None (0 = disabled)",
+   "Solid Color (1)",
+   "Breathing (2)",
+   "Band Spiral Val (3)",
+   "Cycle All (4)",
+   "Cycle Left Right (5)",
+   "Cycle Up Down (6)",
+   "Rainbow Moving Chevron (7)",
+   "Cycle Out In (8)",
+   "Cycle Out In Dual (9)",
+   "Cycle Pinwheel (10)",
+   "Cycle Spiral (11)",
+   "Dual Beacon (12)",
+   "Rainbow Beacon (13)",
+   "Jellybean Raindrops (14)",
+   "Pixel Rain (15)",
+   "Typing Heatmap (16)",
+   "Digital Rain (17)",
+   "Reactive Simple / solid_reactive_simple (18)",
+   "Reactive Multiwide / solid_reactive_multiwide (19)",
+   "Reactive Multinexus / solid_reactive_multinexus (20)",
+   "Splash (21)",
+   "Solid Splash (22)"
+  ],
+  "set_format": "RAW HID custom-value protocol. Outer report dispatch in quantum/via.c:384-389 (id_custom_set_value=0x07, id_custom_get_value=0x08, id_custom_save=0x09) \u2192 via_custom_value_command (via.c:225) \u2192 routes by channel byte data[1] to via_qmk_rgb_matrix_command (via.c:637).\n\nByte layout of the HID payload (per comment at via.c:638 and 663):\n  payload = [ command_id, channel_id, value_id, data0, data1, ... ]\n    byte0 command_id : 0x07 set / 0x08 get / 0x09 save\n    byte1 channel_id : 0x03  (id_qmk_rgb_matrix_channel)\n    byte2 value_id   : 1=brightness, 2=effect, 3=speed, 4=color\n    byte3.. value_data\n\nPer value_id (data starts at byte3):\n  brightness (id=1): [0x07,0x03,0x01,  val]                  val 0-255 (scale8 against max=255, i.e. 1:1)\n  effect     (id=2): [0x07,0x03,0x02,  mode]                 mode 0-22; 0 disables matrix, 1-22 enable+select\n  speed      (id=3): [0x07,0x03,0x03,  speed]                speed 0-255\n  color      (id=4): [0x07,0x03,0x04,  hue, sat]             hue=byte3 0-255, sat=byte4 0-255 (val preserved)\n\nGET mirrors the layout: send [0x08,0x03,value_id] and the firmware fills value_data in-place starting at byte3 (brightness\u2192[d0], effect\u2192[d0], speed\u2192[d0], color\u2192[d0=hue,d1=sat]) \u2014 see via.c:662-686.\n\nSAVE/commit to EEPROM: send [0x09,0x03] (no value_id needed) \u2192 via_qmk_rgb_matrix_save (via.c:718). All set ops use *_noeeprom so changes are RAM-only until id_custom_save (0x09) is sent. Note save() only persists the single value_id that was most recently/exclusively set (it checks rgb_matrix_value_id_mask == single-bit, via.c:720-741), then clears the mask.\n\nByte\u2192meaning mappings:\n  brightness: byte value v (0-255) \u2192 val = scale8(v, RGB_MATRIX_MAXIMUM_BRIGHTNESS); since max=255 on V1 Max, val=v.\n  hue:  byte value 0-255 maps directly to HSV hue (8-bit).\n  sat:  byte value 0-255 maps directly to HSV saturation (8-bit).\n  speed: byte value 0-255 maps directly to rgb_matrix speed.\n  effect: byte value = QMK rgb_matrix mode number; 0 = matrix off.",
+  "notes": "Repo: /Users/vfi/keychron-qmk. Key files: quantum/via.h (enums), quantum/via.c (handlers), keyboards/keychron/v1_max/info.json (enabled animations), keyboards/keychron/v1_max/via_json/v1_max_ansi_encoder.json (authoritative VIA effect list + channel/value mapping).\n\nCHANNEL CONSTANT: quantum/via.h:111 \u2014 id_qmk_rgb_matrix_channel = 3.\nVALUE-ID ENUM: quantum/via.h:128-133 \u2014 via_qmk_rgb_matrix_value { brightness=1, effect=2, effect_speed=3, color=4 }.\nCOMMAND IDs: quantum/via.h:81-83 \u2014 id_custom_set_value=0x07, id_custom_get_value=0x08, id_custom_save=0x09.\n\nIMPORTANT NUANCES:\n1. There is NO separate 'enable'/'toggle' value id on the QMK RGB matrix channel for this firmware. Enable/disable is folded into the effect value (id=2): writing 0 disables the matrix, writing 1-22 enables and selects the mode (via.c:698-705). Likewise GET effect returns 0 when disabled (via.c:673). So treat 'effect' as also being the on/off control.\n\n2. The 'color' value sets hue+sat only; brightness(val) is kept from current state (via.c:712). Two payload bytes: hue then sat.\n\n3. Brightness scale: RGB_MATRIX_MAXIMUM_BRIGHTNESS is NOT overridden in any V1 Max config (config.h, ansi_encoder/config.h, info.json all lack it), so it falls back to the QMK core default UINT8_MAX=255 (quantum/rgb_matrix/rgb_matrix.h:56). Therefore the get-side multiply (val*255/255) and set-side scale8(v,255) are both effectively identity \u2192 the wire value is a straight 0-255 brightness.\n\n4. Effect enum source-of-truth: the VIA dropdown in via_json/v1_max_ansi_encoder.json:23-47 lists the 23 options (None=0..Solid Splash=22) with their exact numeric mode values \u2014 this is what the VIA app sends as the effect byte and matches the firmware's enabled animations in info.json:32-54 (band_spiral_val, breathing, cycle_all, cycle_left_right, cycle_out_in, cycle_out_in_dual, cycle_pinwheel, cycle_spiral, cycle_up_down, digital_rain, dual_beacon, jellybean_raindrops, pixel_rain, rainbow_beacon, rainbow_moving_chevron, solid_reactive_multinexus, solid_reactive_multiwide, solid_reactive_simple, solid_splash, splash, typing_heatmap) plus the always-present SOLID_COLOR(1) base effect.\n\n5. Keychron also compiles 2 CUSTOM effects (RGB_MATRIX_CUSTOM_KB=yes; PER_KEY_RGB and MIXED_RGB in keyboards/keychron/common/rgb/rgb_matrix_kb.inc:22-23, rgb.mk). These exist in the firmware mode enum AFTER the built-in effects but are NOT exposed in the standard VIA dropdown (used internally for retail demo / per-key custom lighting via a separate Keychron raw-HID path in common/rgb/keychron_rgb.c). They are not selectable via the standard id_qmk_rgb_matrix_effect dropdown shown above.\n\n6. Persistence: all sets are *_noeeprom; you must send id_custom_save (0x09) on channel 3 to persist, and save() only writes the one field whose value_id was set since the last save (via.c:718-743).\n\nISO/JIS encoder variants share the identical channel/value protocol; only productId and physical layout differ (via_json/v1_max_iso_encoder.json, v1_max_jis_encoder.json)."
+ }
+}

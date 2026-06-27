@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" width="1200" height="300" role="img" aria-label="KeebTool — Keychron V1 Max battery monitor and VIA configurator">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#14161D"/>
+      <stop offset="1" stop-color="#0A0B0F"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#21D4D9"/>
+      <stop offset="1" stop-color="#926DDE"/>
+    </linearGradient>
+    <linearGradient id="cap" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2A2D38"/>
+      <stop offset="1" stop-color="#101218"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="300" fill="url(#bg)"/>
+  <rect width="1200" height="300" fill="none" stroke="#23262F" stroke-width="1"/>
+
+  <!-- keycap cluster -->
+  <g transform="translate(96 96)">
+    <rect x="0"   y="0"  width="96" height="96" rx="14" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.12"/>
+    <rect x="112" y="0"  width="96" height="96" rx="14" fill="url(#cap)" stroke="#21D4D9" stroke-opacity="0.7"/>
+    <rect x="56"  y="112" width="152" height="44" rx="12" fill="url(#cap)" stroke="#ffffff" stroke-opacity="0.10"/>
+    <!-- battery glyph on the highlighted cap -->
+    <g transform="translate(136 30)" stroke="#21D4D9" stroke-width="3" fill="none">
+      <rect x="0" y="6" width="40" height="24" rx="4"/>
+      <rect x="42" y="13" width="5" height="10" rx="2" fill="#21D4D9" stroke="none"/>
+      <rect x="4" y="10" width="22" height="16" rx="2" fill="#21D4D9" stroke="none"/>
+    </g>
+    <text x="30" y="60" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="44" font-weight="700" fill="#C7CBD6">⌘</text>
+  </g>
+
+  <!-- title -->
+  <text x="340" y="142" font-family="-apple-system,SF Pro Display,Segoe UI,Helvetica,Arial,sans-serif" font-size="76" font-weight="800" fill="#E8EAF0">Keeb<tspan fill="#21D4D9">Tool</tspan></text>
+  <text x="344" y="188" font-family="-apple-system,SF Pro Text,Segoe UI,Helvetica,Arial,sans-serif" font-size="26" font-weight="500" fill="#8A90A0">Keychron V1 Max — battery monitor + VIA configurator for macOS</text>
+  <rect x="344" y="208" width="360" height="4" rx="2" fill="url(#accent)"/>
+</svg>
