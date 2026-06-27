@@ -17,7 +17,12 @@ control RGB lighting — over the VIA raw-HID protocol. Ships with a small QMK f
 adds a battery read-out command and an Fn+B on-board battery gauge.
 
 <p align="center">
-  <img src="docs/keebtool-keymap.png" alt="KeebTool configurator — keymap layers, visual V1 Max layout and keycode picker" width="100%">
+  <img src="docs/keebtool-keymap.png" alt="KeebTool — keymap: layers, visual V1 Max layout and keycode picker" width="100%">
+</p>
+<p align="center">
+  <img src="docs/keebtool-macros.png" alt="KeebTool — macros editor" width="49%">
+  &nbsp;
+  <img src="docs/keebtool-lighting.png" alt="KeebTool — RGB lighting" width="49%">
 </p>
 
 ## Features
