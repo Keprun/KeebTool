@@ -24,6 +24,9 @@ adds a battery read-out command and an Fn+B on-board battery gauge.
   &nbsp;
   <img src="docs/keebtool-lighting.png" alt="KeebTool — RGB lighting" width="49%">
 </p>
+<p align="center">
+  <img src="docs/keebtool-settings.png" alt="KeebTool — settings: 7-language picker" width="100%">
+</p>
 
 ## Features
 
@@ -32,6 +35,7 @@ adds a battery read-out command and an Fn+B on-board battery gauge.
 - 🅼 **Macros** — read, edit and write the keyboard's macro slots.
 - 🌈 **RGB lighting** — effect, brightness, speed, hue/saturation; saved to the keyboard.
 - 🛠 **Firmware patch** — `0xA4` battery command over USB + an Fn+B on-board colour gauge.
+- 🌐 **7 languages** — English · Русский · 中文 · فارسی · Deutsch · Français · Italiano, switchable live in **Settings** (right-to-left layout for Persian).
 
 ## The app — `app/KeebTool`
 

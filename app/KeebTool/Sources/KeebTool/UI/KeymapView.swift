@@ -2,6 +2,7 @@ import SwiftUI
 
 struct KeymapView: View {
     @EnvironmentObject var model: AppModel
+    @EnvironmentObject var loc: Loc
     @State private var selected: KeyRef?
     @State private var hovered: KeyRef?
     @State private var search = ""
@@ -44,7 +45,7 @@ struct KeymapView: View {
             .labelsHidden().pickerStyle(.segmented).frame(width: 220)
             Button { Task { await model.loadKeymap() } } label: { Image(systemName: "arrow.clockwise") }
             Button { Task { await model.resetKeymap() } } label: { Image(systemName: "arrow.uturn.backward") }
-                .help("Reset all layers to factory default")
+                .help(loc.t("keymap.resetTooltip"))
             if model.loading { ProgressView().controlSize(.small) }
             Spacer()
         }
@@ -54,8 +55,8 @@ struct KeymapView: View {
     private var dongleBanner: some View {
         VStack(spacing: 10) {
             Image(systemName: "cable.connector").font(.system(size: 36)).foregroundStyle(Theme.accent2)
-            Text("Connected over the 2.4GHz dongle").font(.headline).foregroundStyle(Theme.textPrimary)
-            Text("The wireless dongle only forwards keystrokes. Connect a USB‑C cable to read battery and configure keymap / macros / lighting.")
+            Text(loc.t("keymap.dongleTitle")).font(.headline).foregroundStyle(Theme.textPrimary)
+            Text(loc.t("keymap.dongleBody"))
                 .font(.callout).foregroundStyle(Theme.textSecondary).multilineTextAlignment(.center).frame(maxWidth: 430)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -93,13 +94,13 @@ struct KeymapView: View {
         VStack(alignment: .leading, spacing: 8) {
             if let sel = selected {
                 Text(keyLabel(sel)).font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.textPrimary)
-                Text("L\(model.selectedLayer) · \(sel.row),\(sel.col) · now \(Keycodes.label(for: model.keycode(model.selectedLayer, sel.row, sel.col)))")
+                Text("L\(model.selectedLayer) · \(sel.row),\(sel.col) · \(loc.t("keymap.now")) \(Keycodes.label(for: model.keycode(model.selectedLayer, sel.row, sel.col)))")
                     .font(.system(size: 11, design: .monospaced)).foregroundStyle(Theme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
-                Text("Select a key").font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.textSecondary)
+                Text(loc.t("keymap.selectKey")).font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.textSecondary)
             }
-            TextField("Search", text: $search).textFieldStyle(.roundedBorder)
+            TextField(loc.t("common.search"), text: $search).textFieldStyle(.roundedBorder)
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 3) {
                     if search.isEmpty { layerKeys }
@@ -123,7 +124,7 @@ struct KeymapView: View {
 
     private var layerKeys: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text("LAYER KEYS").font(.system(size: 10, weight: .semibold)).kerning(1.2).foregroundStyle(Theme.textSecondary).padding(.top, 8)
+            Text(loc.t("keymap.layerKeys")).font(.system(size: 10, weight: .semibold)).kerning(1.2).foregroundStyle(Theme.textSecondary).padding(.top, 8)
             ForEach(0..<model.layerCount, id: \.self) { n in
                 HStack(spacing: 4) {
                     codeButton(LayerKC.MO(n), "MO(\(n))")

@@ -16,7 +16,7 @@ final class AppModel: ObservableObject {
     @Published var battery: (pct: Int, mv: Int)?                 // live cable reading (raw, charging-influenced)
     @Published var charging = false                              // true while powered/charging over the cable
     @Published var viaProtocol = 0
-    @Published var status = "Starting…"
+    @Published var status = Loc.shared.t("status.starting")
     @Published var loading = false
     @Published var dongleMode = false
     @Published var lastBattery: (pct: Int, mv: Int, date: Date)? // last-known from any source (launch display)
@@ -105,8 +105,8 @@ final class AppModel: ObservableObject {
         dongleMode = (lk == .dongle)
         if lk == .dongle {
             battery = nil; charging = false; cableSamples.removeAll()
-            status = dongleResting != nil ? "2.4GHz dongle — resting \(restingText ?? "")"
-                                          : "2.4GHz dongle — plug cable for a live reading"
+            status = dongleResting != nil ? Loc.shared.tf("status.dongleResting", restingText ?? "")
+                                          : Loc.shared.t("status.donglePlug")
             return
         }
         guard lk == .cable else { battery = nil; charging = false; return }
@@ -122,7 +122,8 @@ final class AppModel: ObservableObject {
             store.set(Date().timeIntervalSince1970, forKey: "lastBatDate")
             let v = String(format: "%.2f", Double(b.mv) / 1000)
             let p = smoothedCablePct ?? b.pct
-            status = charging ? "Cable — charging \(p)% · \(v)V" : "Cable — \(p)% · \(v)V"
+            let detail = "\(p)% · \(v)V"
+            status = charging ? Loc.shared.tf("status.cableCharging", detail) : Loc.shared.tf("status.cable", detail)
         }
     }
 
@@ -137,26 +138,26 @@ final class AppModel: ObservableObject {
         store.set(0, forKey: "lastBatMv")
         store.set(now.timeIntervalSince1970, forKey: "lastBatDate")
         dongleMode = (device.currentLink() == .dongle)
-        status = "2.4GHz dongle — \(pct)% (resting, just now)"
+        status = Loc.shared.tf("status.dongleNow", "\(pct)%")
     }
 
     // MARK: Keymap
 
     func loadKeymap() async {
         if loading { return }
-        loading = true; status = "Reading keymap…"
+        loading = true; status = Loc.shared.t("status.readingKeymap")
         defer { loading = false }
         let link = device.currentLink()
         dongleMode = (link == .dongle)
         if link == .dongle {
             connected = true
-            status = "2.4GHz dongle — connect a USB cable to configure"
+            status = Loc.shared.t("status.dongleConfigure")
             return
         }
         let bytes = KB.layerCount * KB.matrixRows * KB.matrixCols * 2
         guard let buf = await device.readKeymapBuffer(byteCount: bytes), buf.count >= bytes else {
             connected = device.connected
-            status = device.connected ? "Keymap read failed" : "Keyboard not connected"
+            status = device.connected ? Loc.shared.t("status.keymapFailed") : Loc.shared.t("status.notConnected")
             return
         }
         var km = keymap
@@ -171,7 +172,7 @@ final class AppModel: ObservableObject {
         keymap = km
         connected = true
         viaProtocol = await device.getProtocolVersion() ?? viaProtocol
-        status = "Keymap loaded"
+        status = Loc.shared.t("status.keymapLoaded")
     }
 
     func keycode(_ layer: Int, _ row: Int, _ col: Int) -> UInt16 {
@@ -190,12 +191,12 @@ final class AppModel: ObservableObject {
     }
 
     func resetKeymap() async {
-        status = "Resetting to default…"
+        status = Loc.shared.t("status.resetting")
         if await device.resetKeymap() {
             await loadKeymap()
-            status = "Reset to default"
+            status = Loc.shared.t("status.resetDone")
         } else {
-            status = "Reset failed"
+            status = Loc.shared.t("status.resetFailed")
         }
     }
 
@@ -208,13 +209,13 @@ final class AppModel: ObservableObject {
         if let v = await device.customGet(value: VIADevice.RGB.brightness), !v.isEmpty { rgbBrightness = Int(v[0]) }
         if let v = await device.customGet(value: VIADevice.RGB.speed), !v.isEmpty { rgbSpeed = Int(v[0]) }
         if let v = await device.customGet(value: VIADevice.RGB.color), v.count > 1 { rgbHue = Int(v[0]); rgbSat = Int(v[1]) }
-        if device.connected { status = "Lighting loaded" }
+        if device.connected { status = Loc.shared.t("status.lightingLoaded") }
     }
 
     func setRGBEffect(_ e: Int) async {
         rgbEffect = e
         _ = await device.customSet(value: VIADevice.RGB.effect, data: [clamp(e)])
-        status = "Effect set"
+        status = Loc.shared.t("status.effectSet")
     }
 
     func setRGBBrightness(_ b: Int) async {
@@ -233,14 +234,14 @@ final class AppModel: ObservableObject {
     }
 
     func saveLighting() async {
-        status = await device.customSave() ? "Lighting saved to keyboard" : "Save failed"
+        status = await device.customSave() ? Loc.shared.t("status.lightingSaved") : Loc.shared.t("status.saveFailed")
     }
 
     // MARK: Macros
 
     func loadMacros() async {
         guard let count = await device.getMacroCount(), let buf = await device.readMacroBuffer() else {
-            status = device.connected ? "Macro read failed" : "Keyboard not connected"; return
+            status = device.connected ? Loc.shared.t("status.macroReadFailed") : Loc.shared.t("status.notConnected"); return
         }
         macroCount = count
         var segs: [[UInt8]] = []
@@ -254,7 +255,7 @@ final class AppModel: ObservableObject {
         macros = segs.map { bytes in
             bytes.allSatisfy { $0 >= 0x20 && $0 < 0x7F } ? (String(bytes: bytes, encoding: .ascii) ?? "") : ""
         }
-        status = "Macros loaded (\(count) slots)"
+        status = Loc.shared.tf("status.macrosLoaded", count)
     }
 
     func isAdvancedMacro(_ i: Int) -> Bool {
@@ -271,6 +272,6 @@ final class AppModel: ObservableObject {
     func saveMacros() async {
         var buf: [UInt8] = []
         for seg in macroRaw { buf.append(contentsOf: seg); buf.append(0) }
-        status = await device.writeMacroBuffer(buf) ? "Macros saved to keyboard" : "Macro save failed"
+        status = await device.writeMacroBuffer(buf) ? Loc.shared.t("status.macrosSaved") : Loc.shared.t("status.macroSaveFailed")
     }
 }

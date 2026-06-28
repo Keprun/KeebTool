@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" width="1200" height="600" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
+<defs>
+ <linearGradient id="cap" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2A2D38"/><stop offset="0.5" stop-color="#191B22"/><stop offset="1" stop-color="#101218"/></linearGradient>
+ <linearGradient id="capMod" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#23202B"/><stop offset="1" stop-color="#0F0E16"/></linearGradient>
+ <linearGradient id="capSel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1B3A44"/><stop offset="1" stop-color="#0E2630"/></linearGradient>
+ <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#21D4D9"/><stop offset="1" stop-color="#0E8F93"/></linearGradient>
+ <linearGradient id="hue" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff4d4d"/><stop offset="0.33" stop-color="#39e639"/><stop offset="0.66" stop-color="#21D4D9"/><stop offset="1" stop-color="#b36bff"/></linearGradient>
+ <radialGradient id="vig" cx="50%" cy="0%" r="90%"><stop offset="0" stop-color="#14161D"/><stop offset="1" stop-color="#0A0B0F"/></radialGradient>
+ <filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+ <filter id="wsh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="10" stdDeviation="22" flood-color="#000" flood-opacity="0.55"/></filter>
+</defs>
+<rect width="1200" height="600" fill="#05060a"/>
+<g filter="url(#wsh)">
+ <rect x="8" y="8" width="1184" height="584" rx="14" fill="#0A0B0F" stroke="#23262F"/>
+ <rect x="216" y="38" width="976" height="546" fill="url(#vig)"/>
+ <circle cx="32" cy="27.0" r="6" fill="#ff5f57"/><circle cx="52" cy="27.0" r="6" fill="#febc2e"/><circle cx="72" cy="27.0" r="6" fill="#28c840"/>
+ <text x="600.0" y="31.0" font-size="13" fill="#8A90A0" text-anchor="middle">Keychron V1 Max</text>
+ <rect x="8" y="38" width="208" height="554" fill="#14161D"/>
+ <rect x="215.5" y="38" width="0.5" height="554" fill="#23262F"/>
+ <text x="30" y="72" font-size="11" fill="#E8EAF0" font-weight="700" letter-spacing="1.5">KEYCHRON</text>
+ <text x="30" y="88" font-size="11" fill="#8A90A0">V1 Max</text>
+ <text x="42" y="112" font-size="13" fill="#8A90A0">Keymap</text><text x="42" y="150" font-size="13" fill="#8A90A0">Macros</text><text x="42" y="188" font-size="13" fill="#8A90A0">Lighting</text>
+ <rect x="16" y="508" width="192" height="60" rx="8" fill="#1A1C24" stroke="#23262F"/>
+ <circle cx="34" cy="534" r="5" fill="#5CE0A0"/>
+ <text x="48" y="534" font-size="11" fill="#E8EAF0" font-weight="600">Connected</text>
+ <text x="48" y="550" font-size="10" fill="#8A90A0" font-family="ui-monospace,Menlo,monospace">95% · 4.06V · charging</text>
+ <rect x="234" y="60" width="3" height="18" rx="1.5" fill="#21D4D9"/>
+ <text x="246" y="75" font-size="16" fill="#E8EAF0" font-weight="600">Settings</text>
+ <text x="1170" y="75" font-size="11" fill="#8A90A0" text-anchor="end" font-family="ui-monospace,Menlo,monospace">7 languages</text>
+ <rect x="216" y="90" width="976" height="0.5" fill="#23262F"/>
+ <text x="234" y="112" font-size="10" fill="#8A90A0" font-weight="700" letter-spacing="1">LANGUAGE</text>
+<text x="234" y="132" font-size="11" fill="#8A90A0">Choose the interface language.</text>
+<rect x="234" y="146" width="304" height="46" rx="9" fill="url(#accent)"/>
+<text x="248" y="175" font-size="18">🇬🇧</text>
+<text x="280" y="168" font-size="13" fill="#0A0B0F" font-weight="600">English</text>
+<text x="280" y="183" font-size="10" fill="#0b3033">English</text>
+<text x="514" y="175" font-size="15" fill="#0A0B0F">✓</text>
+<rect x="550" y="146" width="304" height="46" rx="9" fill="#1A1C24" stroke="#23262F"/>
+<text x="564" y="175" font-size="18">🇷🇺</text>
+<text x="596" y="168" font-size="13" fill="#E8EAF0" font-weight="600">Русский</text>
+<text x="596" y="183" font-size="10" fill="#8A90A0">Russian</text>
+<rect x="866" y="146" width="304" height="46" rx="9" fill="#1A1C24" stroke="#23262F"/>
+<text x="880" y="175" font-size="18">🇨🇳</text>
+<text x="912" y="168" font-size="13" fill="#E8EAF0" font-weight="600">中文</text>
+<text x="912" y="183" font-size="10" fill="#8A90A0">Chinese</text>
+<rect x="234" y="204" width="304" height="46" rx="9" fill="#1A1C24" stroke="#23262F"/>
+<text x="248" y="233" font-size="18">🇮🇷</text>
+<text x="280" y="226" font-size="13" fill="#E8EAF0" font-weight="600">فارسی</text>
+<text x="280" y="241" font-size="10" fill="#8A90A0">Persian</text>
+<rect x="550" y="204" width="304" height="46" rx="9" fill="#1A1C24" stroke="#23262F"/>
+<text x="564" y="233" font-size="18">🇩🇪</text>
+<text x="596" y="226" font-size="13" fill="#E8EAF0" font-weight="600">Deutsch</text>
+<text x="596" y="241" font-size="10" fill="#8A90A0">German</text>
+<rect x="866" y="204" width="304" height="46" rx="9" fill="#1A1C24" stroke="#23262F"/>
+<text x="880" y="233" font-size="18">🇫🇷</text>
+<text x="912" y="226" font-size="13" fill="#E8EAF0" font-weight="600">Français</text>
+<text x="912" y="241" font-size="10" fill="#8A90A0">French</text>
+<rect x="234" y="262" width="304" height="46" rx="9" fill="#1A1C24" stroke="#23262F"/>
+<text x="248" y="291" font-size="18">🇮🇹</text>
+<text x="280" y="284" font-size="13" fill="#E8EAF0" font-weight="600">Italiano</text>
+<text x="280" y="299" font-size="10" fill="#8A90A0">Italian</text>
+<rect x="234" y="326" width="936" height="0.5" fill="#23262F"/>
+<text x="234" y="348" font-size="10" fill="#8A90A0" font-weight="700" letter-spacing="1">ABOUT</text>
+<text x="234" y="370" font-size="13" fill="#E8EAF0" font-weight="600">Keychron V1 Max Tool</text>
+<text x="234" y="388" font-size="11" fill="#8A90A0">Version 2.0</text>
+<text x="234" y="410" font-size="11" fill="#8A90A0">Battery monitor + VIA configurator — keymap, macros and lighting for</text>
+<text x="234" y="426" font-size="11" fill="#8A90A0">the Keychron V1 Max over the VIA raw-HID protocol.</text>
+</g>
+</svg>

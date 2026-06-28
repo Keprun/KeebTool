@@ -1,21 +1,22 @@
 import SwiftUI
 
 enum Pane: String, CaseIterable, Identifiable {
-    case keymap = "Keymap"
-    case macros = "Macros"
-    case lighting = "Lighting"
+    case keymap, macros, lighting, settings
     var id: String { rawValue }
+    var key: String { "nav.\(rawValue)" }
     var icon: String {
         switch self {
         case .keymap: return "keyboard"
         case .macros: return "command"
         case .lighting: return "lightbulb"
+        case .settings: return "gearshape"
         }
     }
 }
 
 struct ConfigView: View {
     @EnvironmentObject var model: AppModel
+    @EnvironmentObject var loc: Loc
     @State private var pane: Pane = .keymap
     @State private var showInfo = false
     @State private var showAbout = false
@@ -29,6 +30,7 @@ struct ConfigView: View {
         .background(Theme.bg)
         .preferredColorScheme(.dark)
         .tint(Theme.accent)
+        .environment(\.layoutDirection, loc.layout)
     }
 
     @ViewBuilder private var content: some View {
@@ -40,6 +42,7 @@ struct ConfigView: View {
                 case .keymap: KeymapView()
                 case .macros: MacrosView()
                 case .lighting: LightingView()
+                case .settings: SettingsView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -73,7 +76,7 @@ struct ConfigView: View {
         return Button { pane = p } label: {
             HStack(spacing: 10) {
                 Image(systemName: p.icon).frame(width: 18)
-                Text(p.rawValue).font(.system(size: 13, weight: active ? .semibold : .regular))
+                Text(loc.t(p.key)).font(.system(size: 13, weight: active ? .semibold : .regular))
                 Spacer()
             }
             .padding(.horizontal, 11).padding(.vertical, 7)
@@ -106,7 +109,7 @@ struct ConfigView: View {
         }
         .buttonStyle(.plain)
         .padding(10)
-        .popover(isPresented: $showInfo, arrowEdge: .trailing) { DeviceInfoView().environmentObject(model) }
+        .popover(isPresented: $showInfo, arrowEdge: .trailing) { DeviceInfoView().environmentObject(model).environmentObject(loc) }
     }
 
     // MARK: Header
@@ -114,13 +117,13 @@ struct ConfigView: View {
     private var header: some View {
         HStack(spacing: 10) {
             RoundedRectangle(cornerRadius: 1.5).fill(Theme.accent).frame(width: 3, height: 18)
-            Text(pane.rawValue).font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.textPrimary)
+            Text(loc.t(pane.key)).font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.textPrimary)
             Spacer()
             if model.loading { ProgressView().controlSize(.small) }
             Text(model.status).font(.system(size: 11, design: .monospaced)).foregroundStyle(Theme.textSecondary)
             Button { showAbout.toggle() } label: { Image(systemName: "info.circle") }
                 .buttonStyle(.borderless)
-                .popover(isPresented: $showAbout, arrowEdge: .bottom) { AboutView() }
+                .popover(isPresented: $showAbout, arrowEdge: .bottom) { AboutView().environmentObject(loc) }
         }
         .padding(.horizontal, 16).padding(.vertical, 12)
         .background(Theme.bg)
@@ -135,11 +138,11 @@ struct ConfigView: View {
         return model.connected ? Color(hex: 0x5CE0A0) : Theme.textSecondary
     }
     private var statusTitle: String {
-        if model.dongleMode { return "2.4GHz dongle" }
-        return model.connected ? "Connected" : "Disconnected"
+        if model.dongleMode { return loc.t("device.dongle") }
+        return model.connected ? loc.t("device.connected") : loc.t("device.disconnected")
     }
     private var statusSub: String {
-        if model.dongleMode { return model.lastBatteryText ?? "cable needed" }
+        if model.dongleMode { return model.restingText ?? model.lastBatteryText ?? "—" }
         if let b = model.battery { return "\(b.pct)% · \(String(format: "%.2f", Double(b.mv) / 1000))V" }
         return "—"
     }

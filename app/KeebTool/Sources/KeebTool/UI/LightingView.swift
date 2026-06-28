@@ -2,6 +2,7 @@ import SwiftUI
 
 struct LightingView: View {
     @EnvironmentObject var model: AppModel
+    @EnvironmentObject var loc: Loc
     @State private var brightness = 255.0
     @State private var speed = 128.0
     @State private var hue = 0.0
@@ -18,8 +19,8 @@ struct LightingView: View {
 
     var body: some View {
         Form {
-            Section("Effect") {
-                Picker("Animation", selection: Binding(
+            Section(loc.t("light.effect")) {
+                Picker(loc.t("light.animation"), selection: Binding(
                     get: { model.rgbEffect },
                     set: { e in Task { await model.setRGBEffect(e) } }
                 )) {
@@ -27,34 +28,34 @@ struct LightingView: View {
                 }
             }
 
-            Section("Brightness & speed") {
-                slider("Brightness", $brightness) { Task { await model.setRGBBrightness(Int(brightness)) } }
-                slider("Speed", $speed) { Task { await model.setRGBSpeed(Int(speed)) } }
+            Section(loc.t("light.brightnessSpeed")) {
+                slider(loc.t("light.brightness"), $brightness) { Task { await model.setRGBBrightness(Int(brightness)) } }
+                slider(loc.t("light.speed"), $speed) { Task { await model.setRGBSpeed(Int(speed)) } }
             }
 
-            Section("Color") {
+            Section(loc.t("light.color")) {
                 HStack(spacing: 10) {
                     RoundedRectangle(cornerRadius: 6)
                         .fill(Color(hue: hue / 255, saturation: sat / 255, brightness: 1))
                         .frame(width: 48, height: 28)
                         .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(.secondary.opacity(0.3)))
-                    Text("preview").font(.caption).foregroundStyle(.secondary)
+                    Text(loc.t("light.preview")).font(.caption).foregroundStyle(.secondary)
                 }
-                slider("Hue", $hue) { Task { await model.setRGBColor(h: Int(hue), s: Int(sat)) } }
-                slider("Saturation", $sat) { Task { await model.setRGBColor(h: Int(hue), s: Int(sat)) } }
-                Text("Color applies to color-capable effects (Solid, Splash, Reactive…).")
+                slider(loc.t("light.hue"), $hue) { Task { await model.setRGBColor(h: Int(hue), s: Int(sat)) } }
+                slider(loc.t("light.saturation"), $sat) { Task { await model.setRGBColor(h: Int(hue), s: Int(sat)) } }
+                Text(loc.t("light.colorNote"))
                     .font(.caption2).foregroundStyle(.secondary)
             }
 
             Section {
                 HStack {
-                    Button { Task { await model.loadLighting(); syncLocal() } } label: { Label("Reload", systemImage: "arrow.clockwise") }
+                    Button { Task { await model.loadLighting(); syncLocal() } } label: { Label(loc.t("common.reload"), systemImage: "arrow.clockwise") }
                     Spacer()
-                    Button { Task { await model.saveLighting() } } label: { Label("Save to keyboard", systemImage: "internaldrive") }
+                    Button { Task { await model.saveLighting() } } label: { Label(loc.t("common.save"), systemImage: "internaldrive") }
                         .buttonStyle(.borderedProminent)
                 }
             } footer: {
-                Text("Changes apply live; Save writes them to the keyboard's memory so they survive a power cycle.")
+                Text(loc.t("light.saveNote"))
             }
         }
         .formStyle(.grouped)

@@ -16,11 +16,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     let model = AppModel()
+    private let loc = Loc.shared
     private var statusItem: NSStatusItem!
     private var configWindow: NSWindow?
     private var cancellables = Set<AnyCancellable>()
     private var batteryItem: NSMenuItem!
     private var restingItem: NSMenuItem!
+    private var openItem: NSMenuItem!
+    private var quitItem: NSMenuItem!
 
     func applicationDidFinishLaunching(_ note: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -34,21 +37,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(restingItem)
         menu.addItem(.separator())
 
-        let open = NSMenuItem(title: "Open Configurator…", action: #selector(openConfig), keyEquivalent: "o")
-        open.target = self
-        menu.addItem(open)
+        openItem = NSMenuItem(title: loc.t("menu.open"), action: #selector(openConfig), keyEquivalent: "o")
+        openItem.target = self
+        menu.addItem(openItem)
         menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        quitItem = NSMenuItem(title: loc.t("menu.quit"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        menu.addItem(quitItem)
         statusItem.menu = menu
         menu.delegate = self
 
         render()
-        model.objectWillChange
+        // Re-render the menu bar on either battery/model changes or a language switch.
+        Publishers.Merge(model.objectWillChange, loc.objectWillChange)
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.render() }
             .store(in: &cancellables)
-        // The very first battery read in AppModel.init can fire before this sink is live,
-        // so the menu bar would miss it (stuck on "—" until the next change). Force one now.
         Task { @MainActor in await self.model.refreshBattery() }
     }
 
@@ -69,7 +72,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         case .none: symbol = "battery.0"
         }
         if let pct {
-            // ⚡ = charging over the cable (the % reads high), ~ = last-known value on the dongle.
             let prefix = model.charging ? " ⚡" : (model.menuApprox ? " ~" : " ")
             button.title = "\(prefix)\(pct)%"
         } else {
@@ -80,31 +82,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         button.image = img
         button.imagePosition = .imageLeading
 
+        openItem?.title = loc.t("menu.open")
+        quitItem?.title = loc.t("menu.quit")
         renderMenuDetail()
     }
 
-    /// Keep the dropdown's battery lines in sync with the model — honest about charging vs resting.
     private func renderMenuDetail() {
         guard batteryItem != nil else { return }
         if model.dongleMode {
-            batteryItem.title = "2.4GHz dongle"
-            if let r = model.restingText { restingItem.title = "Resting ~\(r)"; restingItem.isHidden = false }
-            else { restingItem.title = "Plug cable for a live %"; restingItem.isHidden = false }
+            batteryItem.title = loc.t("device.dongle")
+            if let r = model.restingText { restingItem.title = "\(loc.t("menu.resting")) ~\(r)"; restingItem.isHidden = false }
+            else { restingItem.title = loc.t("menu.plugCable"); restingItem.isHidden = false }
         } else if let b = model.battery {
             let p = model.menuPercent ?? b.pct
             let v = String(format: "%.2f", Double(b.mv) / 1000)
-            batteryItem.title = model.charging ? "Charging \(p)% · \(v)V" : "Battery \(p)% · \(v)V"
-            if let r = model.restingText { restingItem.title = "Resting ~\(r)"; restingItem.isHidden = false }
+            batteryItem.title = model.charging ? "\(loc.t("menu.charging")) \(p)% · \(v)V" : "\(loc.t("menu.battery")) \(p)% · \(v)V"
+            if let r = model.restingText { restingItem.title = "\(loc.t("menu.resting")) ~\(r)"; restingItem.isHidden = false }
             else { restingItem.isHidden = true }
         } else {
-            batteryItem.title = "Battery: —"
+            batteryItem.title = "\(loc.t("menu.battery")): —"
             restingItem.isHidden = true
         }
     }
 
     @objc private func openConfig() {
         if configWindow == nil {
-            let host = NSHostingController(rootView: ConfigView().environmentObject(model))
+            let host = NSHostingController(rootView: ConfigView().environmentObject(model).environmentObject(loc))
             let w = NSWindow(contentViewController: host)
             w.title = "Keychron V1 Max"
             w.setContentSize(NSSize(width: 1040, height: 500))

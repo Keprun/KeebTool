@@ -2,14 +2,15 @@ import SwiftUI
 
 struct MacrosView: View {
     @EnvironmentObject var model: AppModel
+    @EnvironmentObject var loc: Loc
 
     var body: some View {
         VStack(spacing: 0) {
             if model.macroCount == 0 {
                 VStack(spacing: 12) {
                     Image(systemName: "text.append").font(.largeTitle).foregroundStyle(.secondary)
-                    Text("No macros loaded").foregroundStyle(.secondary)
-                    Button("Load from keyboard") { Task { await model.loadMacros() } }
+                    Text(loc.t("macros.none")).foregroundStyle(.secondary)
+                    Button(loc.t("macros.load")) { Task { await model.loadMacros() } }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -20,9 +21,9 @@ struct MacrosView: View {
                                 Text("M\(i)").font(.callout.monospaced()).foregroundStyle(.secondary)
                                     .frame(width: 36, alignment: .leading)
                                 if model.isAdvancedMacro(i) {
-                                    Text("⟨advanced macro — edit in VIA⟩").foregroundStyle(.secondary).italic()
+                                    Text("⟨\(loc.t("macros.advanced"))⟩").foregroundStyle(.secondary).italic()
                                 } else {
-                                    TextField("type text to send…", text: Binding(
+                                    TextField(loc.t("macros.placeholder"), text: Binding(
                                         get: { model.macros[i] },
                                         set: { model.setMacroText(i, $0) }))
                                     .textFieldStyle(.roundedBorder)
@@ -30,15 +31,15 @@ struct MacrosView: View {
                             }
                         }
                     } header: {
-                        Text("\(model.macroCount) macro slots")
+                        Text(loc.tf("macros.slots", model.macroCount))
                     } footer: {
-                        Text("Plain-text macros type the characters. Bind a macro to a key on the Keymap tab — search “M0”…“M15” in the picker. Advanced macros (key combos / delays) are preserved but edited in VIA.")
+                        Text(loc.t("macros.footer"))
                     }
                 }
                 HStack {
-                    Button { Task { await model.loadMacros() } } label: { Label("Reload", systemImage: "arrow.clockwise") }
+                    Button { Task { await model.loadMacros() } } label: { Label(loc.t("common.reload"), systemImage: "arrow.clockwise") }
                     Spacer()
-                    Button { Task { await model.saveMacros() } } label: { Label("Save to keyboard", systemImage: "internaldrive") }
+                    Button { Task { await model.saveMacros() } } label: { Label(loc.t("common.save"), systemImage: "internaldrive") }
                         .buttonStyle(.borderedProminent)
                 }
                 .padding(12)
