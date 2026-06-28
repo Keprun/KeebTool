@@ -37,6 +37,15 @@ adds a battery read-out command and an Fn+B on-board battery gauge.
 - 🛠 **Firmware patch** — `0xA4` battery command over USB + an Fn+B on-board colour gauge.
 - 🌐 **7 languages** — English · Русский · 中文 · فارسی · Deutsch · Français · Italiano, switchable live in **Settings** (right-to-left layout for Persian).
 
+## Compatibility
+
+> ⚠️ This ships **custom keyboard firmware** (a patched QMK build), not stock Keychron firmware. Flashing is opt-in and fully reversible — see Rollback.
+
+- **Prebuilt firmware (`firmware/build/…bin`) and the app are for the Keychron V1 Max — ANSI, encoder (knob) variant only.** That is the single configuration this is built and tested on. Do **not** flash the prebuilt `.bin` onto any other board.
+- **The patch itself** (`firmware/battery-0xA4.patch`) only modifies Keychron's *shared* QMK wireless code (`keyboards/keychron/common/…`), so it should compile for other Keychron wireless QMK boards (the "…Max" / LK_WIRELESS family — e.g. Q/V/K …Max) if you build it for that specific board. **Untested elsewhere**, and the app would also need its USB PID (`0x0913`) and key layout updated for a different model.
+- The app alone (battery + config) needs no firmware at all over USB *except* the battery read-out, which relies on the custom `0xA4` command — so battery % requires this firmware; keymap/macros/lighting work on stock VIA firmware too.
+- **Rollback:** flash `firmware/stock/…bin` to return to stock. The STM32 ROM bootloader cannot be bricked.
+
 ## The app — `app/KeebTool`
 
 Native Swift (AppKit menu bar + SwiftUI), built with SwiftPM.
